@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+openenv-maze-env/
+
+# Build / packaging
+*.egg-info/
+dist/
+build/
+
+# Lock files (optional – depends on your workflow)
+# uv.lock   ← keep if you're using uv for reproducibility
+
+# OS files
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+server/__pycache__
