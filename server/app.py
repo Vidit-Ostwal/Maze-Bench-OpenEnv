@@ -38,7 +38,7 @@ except Exception as e:  # pragma: no cover
 try:
     from ..models import MazeAction, MazeObservation
     from .maze_env_environment import MazeEnvironment
-except ModuleNotFoundError:
+except ImportError:
     from models import MazeAction, MazeObservation
     from server.maze_env_environment import MazeEnvironment
 
