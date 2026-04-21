@@ -11,10 +11,20 @@ The maze environment loads ice-sliding puzzle levels and exposes them
 to LLM agents via the OpenEnv protocol.
 """
 
+from enum import Enum
 from typing import List
 
 from openenv.core.env_server.types import Action, Observation
-from pydantic import Field
+from pydantic import Field, field_validator
+
+
+class MazeDirection(str, Enum):
+    """Cardinal direction for a single Ice Maze step (all players move together)."""
+
+    LEFT = "LEFT"
+    RIGHT = "RIGHT"
+    UP = "UP"
+    DOWN = "DOWN"
 
 
 class MazeAction(Action):
@@ -26,35 +36,66 @@ class MazeAction(Action):
     Exit cells (e) do NOT stop sliding — players slide through them.
     """
 
-    direction: str = Field(
+    direction: MazeDirection = Field(
         ...,
-        description=(
-            "Direction to move all players simultaneously. "
-            "Valid values: 'up', 'down', 'left', 'right' "
-            "(single-letter aliases 'u', 'd', 'l', 'r' are also accepted)."
-        ),
+        description="Direction to move all players simultaneously: LEFT, RIGHT, UP, or DOWN.",
     )
+
+    @field_validator("direction", mode="before")
+    @classmethod
+    def _coerce_direction(cls, v: object) -> object:
+        if isinstance(v, MazeDirection):
+            return v
+        if isinstance(v, str):
+            key = v.strip().upper()
+            if key in MazeDirection.__members__:
+                return MazeDirection[key]
+        return v
 
 
 class MazeObservation(Observation):
     """
     Observation from the Ice Maze environment.
 
-    Contains the current board state, player/exit positions, step count,
-    a human-readable status message, and (on reset only) a full system prompt
-    explaining the rules.
+    Primary agent-facing fields: current board, step budget, action history,
+    and (on reset) the system prompt with rules and layout context.
+    Additional fields support tooling and state introspection.
 
     Inherited from Observation base:
         done (bool)         — True when all players are simultaneously on exit cells
         reward (float|None) — Reward signal for this step
-        metadata (dict)     — Extra info: level_index, optimal_path, action_history
+        metadata (dict)     — Extra info: level_index, action_history (no oracle path)
     """
 
     board: str = Field(
         default="",
         description=(
             "Current ASCII board rendered as a newline-separated string. "
-            "Symbols: # = wall, . = open cell, a = player, e = exit cell."
+            "Symbols: # wall, . ice, a player on non-exit, e unoccupied exit, "
+            "b player currently on an exit."
+        ),
+    )
+    step_count: int = Field(
+        default=0,
+        description="Number of steps taken so far in this episode.",
+    )
+    max_steps: int = Field(
+        default=0,
+        description="Maximum steps allowed for this episode before a hard limit (set on reset).",
+    )
+    previous_actions: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Directions applied so far in order, each value one of "
+            "LEFT, RIGHT, UP, DOWN (same vocabulary as MazeAction)."
+        ),
+    )
+    system_prompt: str = Field(
+        default="",
+        description=(
+            "Instructions for the LLM: maze rules, valid actions, symbols, layout, "
+            "step count vs max steps, and previous actions (oldest first). "
+            "Refreshed on reset() and on each step()."
         ),
     )
     agent_positions: List[List[int]] = Field(
@@ -77,23 +118,31 @@ class MazeObservation(Observation):
         default=1,
         description="Number of players in this level.",
     )
-    step_count: int = Field(
-        default=0,
-        description="Number of steps taken so far in this episode.",
-    )
     message: str = Field(
         default="",
         description=(
             "Human-readable status message describing what just happened, "
-            "e.g. 'Moved left. Step 3.', 'Solved! All players reached an exit in 6 steps.', "
-            "'Invalid direction. Use: up, down, left, right'."
+            "e.g. 'Moved LEFT. Step 3.', 'Solved! All players reached an exit in 6 steps.', "
+            "'Invalid direction. Use: LEFT, RIGHT, UP, DOWN'."
         ),
     )
-    system_prompt: str = Field(
-        default="",
-        description=(
-            "Full instructions for the LLM agent explaining the maze rules, "
-            "valid actions, and the current board layout. "
-            "Populated only on reset(); empty string on subsequent step() calls."
-        ),
-    )
+
+    def __str__(self) -> str:
+        parts = []
+
+        parts.append(f"done={self.done} | reward={self.reward}")
+        parts.append(f"step={self.step_count}/{self.max_steps}")
+        parts.append(f"players={self.agent_positions} exits={self.exit_positions}")
+
+        if self.previous_actions:
+            parts.append(f"actions={self.previous_actions}")
+
+        if self.message:
+            parts.append(f"message={self.message}")
+
+        # 👇 Full system prompt (clearly separated)
+        if self.system_prompt:
+            parts.append("\n=== SYSTEM PROMPT ===")
+            parts.append(self.system_prompt)
+
+        return "\n".join(parts)

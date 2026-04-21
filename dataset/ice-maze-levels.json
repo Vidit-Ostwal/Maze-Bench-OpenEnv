@@ -3,7 +3,7 @@
     "width": 8,
     "height": 8,
     "players": 1,
-    "diameter": 12,
+    "diameter":4,
     "threes_along_diameter": 1,
     "open_cells": 58,
     "states": 58,

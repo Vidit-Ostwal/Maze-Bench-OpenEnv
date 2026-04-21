@@ -28,3 +28,7 @@ build/
 
 server/__pycache__
 __pycache__
+
+experiment.ipynb
+understanding.md
+plan.md

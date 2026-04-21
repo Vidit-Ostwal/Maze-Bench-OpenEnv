@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-Validate dataset/ice-maze-levels.json: ``start`` / ``end`` present and match board scan.
+Validate dataset/ice-maze-levels.json: ``start`` / ``end`` match the board, and ``diameter`` equals ``len(path)`` when both are set.
 
 Board glyphs: ``a`` = start (player) only, ``e`` = exit only, ``b`` = start and exit on the same cell.
 Other lowercase letters (e.g. ``c``) are treated as additional player starts only.
@@ -18,6 +18,20 @@ import json
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from models import MazeAction
+from server.maze_env_environment import MazeEnvironment
+
+STEP_CHAR_TO_DIRECTION = {
+    "U": "UP",
+    "D": "DOWN",
+    "L": "LEFT",
+    "R": "RIGHT",
+}
 
 
 def parse_board(rows: List[str]) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
@@ -94,7 +108,66 @@ def validate_level(i: int, level: Dict) -> List[str]:
             f"{p}: end mismatch — JSON (0-based interior, sorted): {want_exits}; "
             f"parsed board row/col (sorted): {board_exits}; after -1 per axis: {got_exits}"
         )
+
+    if "diameter" in level and "path" in level:
+        path = level["path"]
+        diam = level["diameter"]
+        if not isinstance(path, str):
+            err.append(f"{p}: path must be a string, got {type(path).__name__}")
+        elif not isinstance(diam, int) or isinstance(diam, bool):
+            err.append(f"{p}: diameter must be an int, got {type(diam).__name__}")
+        elif len(path) != diam:
+            err.append(
+                f"{p}: diameter ({diam}) != len(path) ({len(path)}); path={path!r}"
+            )
+
     return err
+
+
+def validate_level_path_replay(i: int, level: Dict, env: MazeEnvironment) -> List[str]:
+    """Replay level path in MazeEnvironment and verify done only at the final step."""
+    p = f"Level[{i}]"
+    path = level.get("path")
+    if path is None:
+        return []
+    if not isinstance(path, str):
+        return [f"{p}: path must be a string, got {type(path).__name__}"]
+
+    errors: List[str] = []
+    obs = env.reset(level_index=i)
+
+    if not path:
+        if not obs.done:
+            errors.append(f"{p}: empty path but reset state is not done")
+        return errors
+
+    if obs.done:
+        errors.append(f"{p}: reset starts done=True but path is non-empty ({path!r})")
+        return errors
+
+    for step_idx, token in enumerate(path, start=1):
+        direction = STEP_CHAR_TO_DIRECTION.get(token)
+        if direction is None:
+            errors.append(
+                f"{p}: path contains invalid token {token!r} at 1-based step {step_idx}; "
+                f"use only {sorted(STEP_CHAR_TO_DIRECTION)}"
+            )
+            break
+
+        obs = env.step(MazeAction(direction=direction))
+        is_last = step_idx == len(path)
+
+        if obs.done and not is_last:
+            errors.append(
+                f"{p}: done became True too early at step {step_idx}/{len(path)}; path={path!r}"
+            )
+            break
+        if is_last and not obs.done:
+            errors.append(
+                f"{p}: done is False at final path step {step_idx}/{len(path)}; path={path!r}"
+            )
+
+    return errors
 
 
 def main() -> int:
@@ -109,9 +182,11 @@ def main() -> int:
         return 1
 
     errors: List[str] = []
+    env = MazeEnvironment()
     for i, level in enumerate(data):
         if isinstance(level, dict):
             errors.extend(validate_level(i, level))
+            errors.extend(validate_level_path_replay(i, level, env))
         else:
             errors.append(f"Level[{i}]: not an object")
 
