@@ -7,10 +7,11 @@
 """Maze Env Environment."""
 
 from .client import MazeEnv
-from .models import MazeAction, MazeObservation
+from .models import MazeAction, MazeDirection, MazeObservation
 
 __all__ = [
     "MazeAction",
+    "MazeDirection",
     "MazeObservation",
     "MazeEnv",
 ]

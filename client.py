@@ -15,9 +15,7 @@ from openenv.core.env_server.types import State
 from .models import MazeAction, MazeObservation
 
 
-class MazeEnv(
-    EnvClient[MazeAction, MazeObservation, State]
-):
+class MazeEnv(EnvClient[MazeAction, MazeObservation, State]):
     """
     Client for the Ice Maze Environment.
 
@@ -30,7 +28,7 @@ class MazeEnv(
         ...     obs = await env.reset(level_index=1)
         ...     print(obs.observation.system_prompt)
         ...
-        ...     obs = await env.step(MazeAction(direction="left"))
+        ...     obs = await env.step(MazeAction(direction="LEFT"))
         ...     print(obs.observation.board)
         ...     print(obs.observation.message)
 
@@ -38,14 +36,14 @@ class MazeEnv(
         >>> with MazeEnv(base_url="http://localhost:8000").sync() as env:
         ...     obs = env.reset(level_index=1)
         ...     print(obs.observation.system_prompt)
-        ...     obs = env.step(MazeAction(direction="up"))
+        ...     obs = env.step(MazeAction(direction="UP"))
         ...     print(obs.observation.board)
 
     Example with Docker:
         >>> client = await MazeEnv.from_docker_image("maze_env-env:latest")
         >>> try:
         ...     obs = await client.reset(level_index=0)
-        ...     obs = await client.step(MazeAction(direction="right"))
+        ...     obs = await client.step(MazeAction(direction="RIGHT"))
         ... finally:
         ...     await client.close()
     """
@@ -60,9 +58,8 @@ class MazeEnv(
         Returns:
             Dictionary representation suitable for JSON encoding.
         """
-        return {
-            "direction": action.direction,
-        }
+        # Send canonical wire value expected by the environment.
+        return {"direction": action.direction.value}
 
     def _parse_result(self, payload: Dict) -> StepResult[MazeObservation]:
         """
@@ -83,23 +80,27 @@ class MazeEnv(
             StepResult with a fully populated MazeObservation.
         """
         obs_data = payload.get("observation", {})
+        done = payload.get("done", False)
+        reward = payload.get("reward")
         observation = MazeObservation(
             board=obs_data.get("board", ""),
+            step_count=obs_data.get("step_count", 0),
+            max_steps=obs_data.get("max_steps", 0),
+            previous_actions=obs_data.get("previous_actions", []),
+            system_prompt=obs_data.get("system_prompt", ""),
             agent_positions=obs_data.get("agent_positions", []),
             exit_positions=obs_data.get("exit_positions", []),
             num_players=obs_data.get("num_players", 1),
-            step_count=obs_data.get("step_count", 0),
             message=obs_data.get("message", ""),
-            system_prompt=obs_data.get("system_prompt", ""),
-            done=payload.get("done", False),
-            reward=payload.get("reward"),
-            metadata=obs_data.get("metadata", {}),
+            done=done,
+            reward=reward,
+            metadata=obs_data.get("metadata", payload.get("metadata", {})),
         )
 
         return StepResult(
             observation=observation,
-            reward=payload.get("reward"),
-            done=payload.get("done", False),
+            reward=reward,
+            done=done,
         )
 
     def _parse_state(self, payload: Dict) -> State:
