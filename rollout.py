@@ -24,6 +24,8 @@ except ImportError:
 
 VALID_DIRECTIONS = ("LEFT", "RIGHT", "UP", "DOWN")
 ACTION_REGEX = re.compile(r"\b(LEFT|RIGHT|UP|DOWN)\b", flags=re.IGNORECASE)
+THOUGHT_REGEX = re.compile(r"(?im)^thought\s*:\s*(.+)$")
+DIRECTION_LINE_REGEX = re.compile(r"(?im)^direction\s*:\s*(LEFT|RIGHT|UP|DOWN)\s*$")
 
 
 def resolve_rollout_path(path: Optional[Path], *, rollout_id: str, extension: str) -> Optional[Path]:
@@ -62,11 +64,25 @@ def parse_direction(text: str) -> str:
     return match.group(1).upper()
 
 
-def decide_action(client: OpenAI, model: str, obs: MazeObservation) -> tuple[str, str]:
-    """Call OpenAI and choose one movement direction."""
+def parse_decision(text: str) -> tuple[str, str]:
+    """Parse Direction/Thought output with graceful fallback."""
+    direction_match = DIRECTION_LINE_REGEX.search(text or "")
+    direction = direction_match.group(1).upper() if direction_match else parse_direction(text)
+    thought_match = THOUGHT_REGEX.search(text or "")
+    thought = thought_match.group(1).strip() if thought_match else (text or "").strip()
+    if not thought:
+        thought = "No reasoning provided."
+    return direction, thought
+
+
+def decide_action(client: OpenAI, model: str, obs: MazeObservation) -> tuple[str, str, str]:
+    """Call OpenAI, reason over all directions, and choose an action."""
     user_prompt = (
-        "Choose the next move.\n"
-        "Return only one token from: LEFT, RIGHT, UP, DOWN.\n\n"
+        "Evaluate each direction mentally (LEFT, RIGHT, UP, DOWN), "
+        "predict what each would achieve, then choose the best move.\n"
+        "Return exactly this format:\n"
+        "Direction: <LEFT|RIGHT|UP|DOWN>\n"
+        "Thought: <brief reasoning>\n"
     )
 
     response = client.responses.create(
@@ -75,8 +91,8 @@ def decide_action(client: OpenAI, model: str, obs: MazeObservation) -> tuple[str
         input=user_prompt,
     )
     raw_text = extract_text_from_response(response)
-    direction = parse_direction(raw_text)
-    return direction, raw_text
+    direction, thought = parse_decision(raw_text)
+    return direction, thought, raw_text
 
 
 def append_observation(
@@ -85,6 +101,7 @@ def append_observation(
     step_index: int,
     observation: MazeObservation,
     chosen_action: Optional[str],
+    model_thought: Optional[str],
     model_response: Optional[str],
     metadata: dict,
 ) -> None:
@@ -93,6 +110,7 @@ def append_observation(
         "metadata": metadata,
         "step_index": step_index,
         "chosen_action": chosen_action,
+        "model_thought": model_thought,
         "model_response": model_response,
         "observation": observation.model_dump(),
     }
@@ -146,17 +164,19 @@ def run_rollout(
             step_index=obs.step_count,
             observation=obs,
             chosen_action=None,
+            model_thought=None,
             model_response=None,
             metadata=rollout_metadata,
         )
 
         while not obs.done and obs.step_count < obs.max_steps:
-            action, model_text = decide_action(llm_client, model, obs)
+            action, thought, model_text = decide_action(llm_client, model, obs)
             step_result = env.step(MazeAction(direction=action))
             obs = step_result.observation
 
             print(f"\n=== STEP {obs.step_count} ===")
-            print(f"action={action} | model_response={model_text!r}")
+            print(f"direction={action}")
+            print(f"thought={thought}")
             print(obs)
             print(f"done={obs.done} reward={obs.reward}")
             print(f"message={obs.message}")
@@ -166,6 +186,7 @@ def run_rollout(
                 step_index=obs.step_count,
                 observation=obs,
                 chosen_action=action,
+                model_thought=thought,
                 model_response=model_text,
                 metadata=rollout_metadata,
             )

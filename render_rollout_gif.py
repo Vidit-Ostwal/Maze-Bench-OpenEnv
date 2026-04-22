@@ -280,7 +280,7 @@ def _build_frame(
     obs = record.get("observation", {})
     meta = record.get("metadata", {})
 
-    level     = meta.get("level_index", obs.get("level_index", "?")) + 1
+    level     = meta.get("level_index", obs.get("level_index", "?"))
     model     = meta.get("model", "unknown")
     step      = obs.get("step_count", record.get("step_index", 0))
     max_steps = obs.get("max_steps", 20)
@@ -288,6 +288,7 @@ def _build_frame(
     done      = obs.get("done", False)
     reward    = obs.get("reward", 0.0)
     message   = obs.get("message") or ""
+    thought   = record.get("model_thought") or ""
 
     board     = _parse_board(obs.get("board", ""))
     agent_rc  = _find_agent(board)
@@ -357,9 +358,43 @@ def _build_frame(
     bar_col = TEXT_GREEN if done else (TEXT_GOLD if frac > 0.7 else TEXT_ACCENT)
     _progress_bar(draw, margin, pb_y, fw - margin*2, 6, frac, bar_color=bar_col)
 
+    # ── model thought bubble ──────────────────────────────────────────────────
+    # The thought panel occupies the space between pb_y and oy (board origin).
+    # We measure the available height so text never bleeds into the board.
+    thought_area_h = oy - pb_y - 8   # pixels available below progress bar
+    if thought and thought_area_h > 30:
+        max_chars = max(20, (fw - margin * 2 - 100) // 7)
+        words = thought.split()
+        lines: list[str] = []
+        cur = ""
+        for word in words:
+            test = (cur + " " + word).strip()
+            if len(test) <= max_chars:
+                cur = test
+            else:
+                if cur:
+                    lines.append(cur)
+                cur = word
+        if cur:
+            lines.append(cur)
+        line_h = 16
+        max_lines = max(1, (thought_area_h - 20) // line_h)
+        lines = lines[:max_lines]
+        panel_h = min(thought_area_h - 4, len(lines) * line_h + 18)
+        ty = pb_y + 6
+        _draw_rounded_rect(draw, (margin, ty, fw - margin, ty + panel_h),
+                           6, fill="#060F1E", outline="#1A2E50", width=1)
+        draw.text((margin + 10, ty + 5), "THOUGHT:", fill="#3A6080", font=fonts["small"])
+        lw = draw.textbbox((0, 0), "THOUGHT:", font=fonts["small"])[2] + 14
+        for i, line in enumerate(lines):
+            lx = margin + 10 + lw if i == 0 else margin + 10
+            ly = ty + 5 + i * line_h
+            if ly + line_h <= ty + panel_h:   # clip to panel
+                draw.text((lx, ly), line, fill="#5A8EB8", font=fonts["small"])
+
     # ── message ───────────────────────────────────────────────────────────────
     if message:
-        msg_y = pb_y + 12
+        msg_y = oy - 18   # pin message just above the board
         draw.text((margin, msg_y), f"  {message[:100]}", fill=TEXT_DIM, font=fonts["small"])
 
     # ── board cells ──────────────────────────────────────────────────────────
@@ -413,8 +448,17 @@ def render_rollout_gif(
     *,
     frame_duration_ms: int = 700,
     cell_size: int = 48,
+    level_index: int | None = None,
 ) -> None:
     records = _load_jsonl(input_jsonl)
+    if level_index is not None:
+        records = [
+            r for r in records
+            if r.get("metadata", {}).get("level_index") == level_index
+            or r.get("observation", {}).get("level_index") == level_index
+        ]
+        if not records:
+            raise ValueError(f"No records found for level_index={level_index}")
     first_board = _parse_board(records[0].get("observation", {}).get("board", ""))
     if not first_board:
         raise ValueError("Empty board in first record.")
@@ -423,11 +467,22 @@ def render_rollout_gif(
     cols_n = len(first_board[0])
 
     margin   = 28
-    top_h    = 150
     bot_h    = 38
     board_w  = cols_n * cell_size
     board_h  = rows_n * cell_size
     fw       = board_w + margin * 2
+
+    # Measure worst-case thought panel height across all records so every
+    # frame has the same dimensions (GIF requires uniform frame size).
+    BASE_TOP_H   = 155   # title + stats + progress bar + message
+    THOUGHT_LINE_H = 16
+    THOUGHT_MAX_LINES = 3
+    THOUGHT_PADDING   = 18  # top/bottom padding inside the thought box
+    THOUGHT_MARGIN    = 10  # gap above thought box
+
+    has_any_thought = any(r.get("model_thought") for r in records)
+    thought_panel_h = (THOUGHT_MAX_LINES * THOUGHT_LINE_H + THOUGHT_PADDING + THOUGHT_MARGIN) if has_any_thought else 0
+    top_h    = BASE_TOP_H + thought_panel_h
     fh       = top_h + board_h + bot_h + 10
     ox       = margin
     oy       = top_h
@@ -494,11 +549,14 @@ def main() -> None:
     parser.add_argument("--output", default="rollout.gif")
     parser.add_argument("--frame-duration-ms", type=int, default=700)
     parser.add_argument("--cell-size", type=int, default=48)
+    parser.add_argument("--level-index", type=int, default=None,
+                        help="Only render records for this level index.")
     args = parser.parse_args()
     render_rollout_gif(
         Path(args.input), Path(args.output),
         frame_duration_ms=args.frame_duration_ms,
         cell_size=args.cell_size,
+        level_index=args.level_index,
     )
     print(f"Saved: {args.output}")
 
