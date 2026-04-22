@@ -23,7 +23,9 @@ Levels live in `dataset/ice-maze-levels.json`.
 
 - **Actions**: `LEFT`, `RIGHT`, `UP`, `DOWN`
 - **Movement**: on each step, every player slides as far as possible in that direction
+- **Sliding stops on**: walls (`#`) or occupied cells (`a`/`b`) only; exits (`e`) are traversable
 - **Win condition**: episode is solved only when every player is on an exit after a step
+- **Rewards**: solved `+1.0`, moved `-0.01`, no movement `-0.1`
 
 Board symbols used at runtime:
 
@@ -77,12 +79,25 @@ Or via installed script:
 OPENAI_API_KEY=... uv run rollout --base-url http://localhost:8000 --level-index 0
 ```
 
+Useful rollout flags:
+
+- `--model` (default: `gpt-5.4-mini`)
+- `--frame-duration-ms` (default: `700`)
+- omit `--level-index` to cycle levels across resets
+
 By default, each run writes paired files in `outputs/` with the same UUID:
 
 - `outputs/rollout_<uuid>.jsonl`
 - `outputs/rollout_<uuid>.gif`
 
-The GIF shows a short pre-move decision flash (direction arrow on the current board), then the resulting board state.
+JSONL records contain: `metadata`, `step_index`, `chosen_action`, `model_response`, `observation`.
+If the model output does not contain a valid direction token, rollout falls back to `UP`.
+
+The GIF plays three phases per move:
+
+1. bright direction arrow on current board (`Model chose action`)
+2. dim arrow flash on current board
+3. resulting next board (`After move`)
 
 Override paths (supports `{uuid}` token or directory targets):
 
@@ -109,6 +124,14 @@ Or via script entrypoint:
 ```bash
 uv run rollout-gif --input rollout_observations.jsonl --output rollout.gif
 ```
+
+Optional renderer flag:
+
+- `--cell-size` (default: `48`)
+
+## Sample Replay
+
+![Rollout replay sample](outputs/rollout_2f7201fb-e92e-4f6d-b99c-7ff2fd2d01d9.gif)
 
 ## Docker
 
@@ -165,6 +188,9 @@ This uses `openenv.yaml` and deploys the Docker-backed environment.
 ├── models.py
 ├── openenv.yaml
 ├── pyproject.toml
+├── rollout.py
+├── render_rollout_gif.py
+├── outputs/                  # generated rollout JSONL + GIF files
 ├── dataset/
 │   ├── ice-maze-levels.json
 │   └── validate_dataset.py
