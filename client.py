@@ -12,7 +12,10 @@ from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-from .models import MazeAction, MazeObservation
+try:
+    from .models import MazeAction, MazeObservation
+except ImportError:
+    from models import MazeAction, MazeObservation
 
 
 class MazeEnv(EnvClient[MazeAction, MazeObservation, State]):
@@ -91,6 +94,10 @@ class MazeEnv(EnvClient[MazeAction, MazeObservation, State]):
             agent_positions=obs_data.get("agent_positions", []),
             exit_positions=obs_data.get("exit_positions", []),
             num_players=obs_data.get("num_players", 1),
+            level_index=obs_data.get(
+                "level_index",
+                obs_data.get("metadata", payload.get("metadata", {})).get("level_index", -1),
+            ),
             message=obs_data.get("message", ""),
             done=done,
             reward=reward,

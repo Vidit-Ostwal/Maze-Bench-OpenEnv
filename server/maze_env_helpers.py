@@ -63,8 +63,8 @@ def parse_board_entities(
 
 
 def render_board(grid: List[List[str]]) -> str:
-    """Convert the 2D grid into the text board sent in observations/prompts."""
-    return "\n".join("".join(row) for row in grid)
+    """Render the board as spaced rows joined by newlines."""
+    return "\n".join(" ".join(row) for row in grid)
 
 
 # ---------------------------------------------------------------------------

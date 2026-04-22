@@ -64,13 +64,13 @@ class MazeObservation(Observation):
     Inherited from Observation base:
         done (bool)         — True when all players are simultaneously on exit cells
         reward (float|None) — Reward signal for this step
-        metadata (dict)     — Extra info: level_index, action_history (no oracle path)
+        metadata (dict)     — Extra info such as action history (no oracle path)
     """
 
     board: str = Field(
         default="",
         description=(
-            "Current ASCII board rendered as a newline-separated string. "
+            "Current board rendered as spaced rows joined by newlines. "
             "Symbols: # wall, . ice, a player on non-exit, e unoccupied exit, "
             "b player currently on an exit."
         ),
@@ -118,6 +118,10 @@ class MazeObservation(Observation):
         default=1,
         description="Number of players in this level.",
     )
+    level_index: int = Field(
+        default=-1,
+        description="Dataset level index for the current episode.",
+    )
     message: str = Field(
         default="",
         description=(
@@ -132,7 +136,10 @@ class MazeObservation(Observation):
 
         parts.append(f"done={self.done} | reward={self.reward}")
         parts.append(f"step={self.step_count}/{self.max_steps}")
+        parts.append(f"level_index={self.level_index}")
         parts.append(f"players={self.agent_positions} exits={self.exit_positions}")
+        if self.board:
+            parts.append(f"board:\n{self.board}")
 
         if self.previous_actions:
             parts.append(f"actions={self.previous_actions}")

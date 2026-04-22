@@ -32,3 +32,4 @@ __pycache__
 experiment.ipynb
 understanding.md
 plan.md
+rollout_observations.jsonl
