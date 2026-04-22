@@ -14,6 +14,8 @@ version = "0.1.0"
 description = "Maze Env environment for OpenEnv"
 requires-python = ">=3.10"
 dependencies = [
+    "openai>=2.32.0",
+    "pillow>=11.0.0",
     # Core OpenEnv runtime (provides FastAPI server + HTTP client types)
     # install from github
     # "openenv-core[core] @ git+https://github.com/meta-pytorch/OpenEnv.git",
@@ -38,6 +40,8 @@ dev = [
 # Server entry point - enables running via: uv run --project . server
 # or: python -m maze_env.server.app
 server = "maze_env.server.app:main"
+rollout = "maze_env.rollout:main"
+rollout-gif = "maze_env.render_rollout_gif:main"
 
 [tool.setuptools]
 include-package-data = true

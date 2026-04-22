@@ -280,7 +280,7 @@ def _build_frame(
     obs = record.get("observation", {})
     meta = record.get("metadata", {})
 
-    level     = meta.get("level_index", obs.get("level_index", "?"))
+    level     = meta.get("level_index", obs.get("level_index", "?")) + 1
     model     = meta.get("model", "unknown")
     step      = obs.get("step_count", record.get("step_index", 0))
     max_steps = obs.get("max_steps", 20)

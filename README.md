@@ -63,6 +63,53 @@ Or with uvicorn directly:
 uv run uvicorn server.app:app --reload
 ```
 
+## Run One LLM Rollout
+
+Use OpenAI to choose a direction at each step (using `system_prompt` from every observation):
+
+```bash
+OPENAI_API_KEY=... uv run python rollout.py --base-url http://localhost:8000 --level-index 0
+```
+
+Or via installed script:
+
+```bash
+OPENAI_API_KEY=... uv run rollout --base-url http://localhost:8000 --level-index 0
+```
+
+By default, each run writes paired files in `outputs/` with the same UUID:
+
+- `outputs/rollout_<uuid>.jsonl`
+- `outputs/rollout_<uuid>.gif`
+
+The GIF shows a short pre-move decision flash (direction arrow on the current board), then the resulting board state.
+
+Override paths (supports `{uuid}` token or directory targets):
+
+```bash
+OPENAI_API_KEY=... uv run rollout --base-url http://localhost:8000 --level-index 0 \
+  --output outputs/custom_{uuid}.jsonl \
+  --gif-output outputs/custom_{uuid}.gif
+```
+
+Disable GIF rendering with:
+
+```bash
+OPENAI_API_KEY=... uv run rollout --base-url http://localhost:8000 --level-index 0 --gif-output ""
+```
+
+Render a GIF from an existing observations file:
+
+```bash
+uv run python render_rollout_gif.py --input rollout_observations.jsonl --output rollout.gif
+```
+
+Or via script entrypoint:
+
+```bash
+uv run rollout-gif --input rollout_observations.jsonl --output rollout.gif
+```
+
 ## Docker
 
 Build:
