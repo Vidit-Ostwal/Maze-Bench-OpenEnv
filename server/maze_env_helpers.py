@@ -252,15 +252,18 @@ def build_system_prompt(
         if num_players == 1
         else f"There are {num_players} players on the board."
     )
+
     move_line = (
         "Each turn, send a direction to move the player."
         if num_players == 1
         else "Each turn, ALL players move SIMULTANEOUSLY in the same direction."
     )
+
     block_line = (
         "" if num_players == 1
         else "  - Players act as walls — they block each other's sliding.\n"
     )
+
     prev_display = ", ".join(previous_actions) if previous_actions else "(none yet)"
 
     return (
@@ -284,9 +287,13 @@ def build_system_prompt(
         f"  - Exit cells (e) do NOT stop sliding — players slide through or onto them.\n"
         f"  - After all players stop: if EVERY player is on an exit cell → you win!\n"
         f"  - Exit cells are shared — any player can use any exit.\n"
-        f"  - Avoid repeating the same move twice in a row. Consecutive identical actions "
-        f"(e.g. LEFT then LEFT, RIGHT then RIGHT, UP then UP, DOWN then DOWN) are usually "
-        f"wasteful because sliding already moves as far as possible in that direction.\n"
+        f"  - Avoid repeating the same move twice in a row. Consecutive identical moves are usually wasteful because sliding already goes as far as possible.\n"
+        f"  - Avoid immediately reversing the previous move unless it creates a new useful interaction.\n"
+        f"    Opposite pairs usually undo progress:\n"
+        f"      LEFT ↔ RIGHT\n"
+        f"      UP ↔ DOWN\n"
+        f"    Example: LEFT then RIGHT often returns players to prior lanes or positions.\n"
+        f"  - Before choosing an action, think whether the move changes board state, improves alignment, or helps reach exits.\n"
         f"\n"
         f"STEP BUDGET: at most {max_steps} steps for this level.\n"
         f"\n"
