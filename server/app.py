@@ -34,7 +34,6 @@ try:
     import gradio as gr
     from fastapi import Body, HTTPException, WebSocket, WebSocketDisconnect, status
     from fastapi.responses import RedirectResponse
-    from openenv.core.env_server.gradio_theme import OPENENV_GRADIO_CSS, OPENENV_GRADIO_THEME
     from openenv.core.env_server.http_server import create_fastapi_app
     from openenv.core.env_server.web_interface import (
         WebInterfaceManager,
@@ -50,11 +49,11 @@ except Exception as e:  # pragma: no cover
 
 try:
     from ..models import MazeAction, MazeObservation
-    from .gradio_ui import build_maze_gradio_app
+    from .gradio_ui import MAZE_GRADIO_THEME, build_maze_gradio_app
     from .maze_env_environment import MazeEnvironment
 except ImportError:
     from models import MazeAction, MazeObservation
-    from server.gradio_ui import build_maze_gradio_app
+    from server.gradio_ui import MAZE_GRADIO_THEME, build_maze_gradio_app
     from server.maze_env_environment import MazeEnvironment
 
 
@@ -143,8 +142,7 @@ def _create_custom_only_web_app():
         app,
         custom_blocks,
         path="/web",
-        theme=OPENENV_GRADIO_THEME,
-        css=OPENENV_GRADIO_CSS,
+        theme=MAZE_GRADIO_THEME,
     )
     return app
 

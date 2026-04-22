@@ -5,6 +5,32 @@ from typing import Any
 
 import gradio as gr
 
+# Light Gradio theme (avoids OpenEnv’s square-corner / terminal CSS on /web).
+MAZE_GRADIO_THEME = gr.themes.Soft(
+    primary_hue=gr.themes.colors.sky,
+    secondary_hue=gr.themes.colors.blue,
+    neutral_hue=gr.themes.colors.slate,
+).set(
+    body_background_fill="#e6ebf3",
+    body_background_fill_dark="#e6ebf3",
+    background_fill_primary="#e8ecf4",
+    background_fill_secondary="#e2e7f0",
+    block_background_fill="#e8ecf4",
+    block_border_color="#d2dce8",
+    block_label_text_color="#64748b",
+    block_title_text_color="#1e3a5f",
+    border_color_primary="#dbe7f2",
+    input_background_fill="#eceff6",
+    input_border_color="#c8d5e3",
+    button_primary_background_fill="#0ea5e9",
+    button_primary_background_fill_hover="#0284c7",
+    button_primary_text_color="#ffffff",
+    button_secondary_background_fill="#eceff6",
+    button_secondary_background_fill_hover="#e2e8f0",
+    button_secondary_text_color="#1e3a5f",
+    button_secondary_border_color="#cfe2f0",
+)
+
 
 # ==========================================================
 # ICE OPS UI
@@ -14,22 +40,58 @@ _CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
 :root{
-    --bg1:#f7fbff;
-    --bg2:#dfeeff;
-    --panel:#ffffffd9;
-    --line:#d8e9ff;
-    --text:#17324d;
-    --muted:#6f89a8;
-    --blue:#2f8fff;
-    --blue2:#71c2ff;
-    --green:#11c989;
+    /* Page: same hue as boxes — tinted blue-gray, not white */
+    --bg1:#e8ecf4;
+    --bg2:#dfe5ef;
+    /* Column shells: step darker so cards still read against the page */
+    --panel:#d8dfe9;
+    --panel-mid:#d0d8e4;
+    /* Nested regions inside a column — barely lighter, still matches the trio */
+    --panel-inset:#eceff6;
+    --line:#d2dce8;
+    --text:#1e3a5f;
+    --muted:#64748b;
+    --blue:#0ea5e9;
+    --blue2:#7dd3fc;
+    --green:#0d9488;
+    /* Full-page paint (reused below + for !important overrides) */
+    --mz-page-stack:
+        radial-gradient(circle at 12% 8%,#eef1f7 0%,transparent 48%),
+        radial-gradient(circle at 88% 92%,#e3e8f1 0%,transparent 44%),
+        linear-gradient(165deg,var(--bg1) 0%,var(--bg2) 100%);
+    /* Gradio theme tokens — layout uses these for big surfaces; keep them off pure white */
+    --body-background-fill:var(--bg2);
+    --background-fill-primary:var(--bg1);
+    --background-fill-secondary:#e2e7f0;
+    --block-background-fill:var(--bg1);
 }
 
-body, .gradio-container{
-    background:
-        radial-gradient(circle at top left,#ffffff 0%,transparent 30%),
-        radial-gradient(circle at bottom right,#d8ebff 0%,transparent 35%),
-        linear-gradient(135deg,var(--bg1),var(--bg2));
+html{
+    background:var(--mz-page-stack) !important;
+    background-color:var(--bg2) !important;
+    min-height:100%;
+}
+
+body{
+    background:var(--mz-page-stack) !important;
+    background-color:var(--bg2) !important;
+    font-family:Inter,sans-serif!important;
+    color:var(--text)!important;
+}
+
+/* Host element for Gradio 6 — often paints the visible “page” behind blocks */
+gradio-app{
+    background:var(--mz-page-stack) !important;
+    background-color:var(--bg2) !important;
+    /* Inherited into shadow tree — keeps inner wrappers off default white */
+    --body-background-fill:var(--bg2);
+    --background-fill-primary:var(--bg1);
+    --background-fill-secondary:#e2e7f0;
+    --block-background-fill:var(--bg1);
+}
+
+body .gradio-container{
+    background:transparent !important;
     font-family:Inter,sans-serif!important;
     color:var(--text)!important;
 }
@@ -39,19 +101,20 @@ footer{display:none!important;}
 .block-container{
     max-width:1480px!important;
     padding-top:22px!important;
+    background:transparent !important;
 }
 
 .mz-card{
-    background:var(--panel);
-    backdrop-filter:blur(14px);
+    background:linear-gradient(180deg,var(--panel) 0%,var(--panel-mid) 100%);
+    backdrop-filter:blur(10px);
     border:1px solid var(--line);
     border-radius:24px;
     padding:18px;
-    box-shadow:0 12px 28px rgba(40,90,170,.08);
+    box-shadow:0 6px 20px rgba(15,23,42,.05);
 }
 
 #mz-head{
-    background:linear-gradient(135deg,#ffffff,#eef7ff);
+    background:linear-gradient(135deg,var(--panel-inset),var(--bg2));
     border:1px solid var(--line);
     border-radius:24px;
     padding:18px 24px;
@@ -61,7 +124,7 @@ footer{display:none!important;}
 #mz-title{
     font-size:1.55rem;
     font-weight:900;
-    color:#16324f;
+    color:#1e3a5f;
 }
 
 #mz-sub{
@@ -76,7 +139,7 @@ footer{display:none!important;}
     justify-content:center;
     align-items:center;
     border-radius:24px;
-    background:linear-gradient(180deg,#ffffff,#edf7ff);
+    background:linear-gradient(180deg,var(--panel) 0%,var(--panel-mid) 100%);
     border:1px solid var(--line);
     padding:18px;
 }
@@ -84,16 +147,16 @@ footer{display:none!important;}
 button{
     min-height:58px!important;
     border-radius:18px!important;
-    border:1px solid #d5e8ff!important;
-    background:linear-gradient(180deg,#ffffff,#f3f9ff)!important;
-    color:#17324d!important;
+    border:1px solid #c8d5e3!important;
+    background:linear-gradient(180deg,var(--panel-inset),#e2e8f0)!important;
+    color:#1e3a5f!important;
     font-weight:800!important;
     transition:.18s ease!important;
 }
 
 button:hover{
     transform:translateY(-2px);
-    box-shadow:0 10px 18px rgba(40,90,170,.12);
+    box-shadow:0 8px 20px rgba(15,23,42,.08);
 }
 
 .dir button{
@@ -108,8 +171,8 @@ button:hover{
     display:flex;
     flex-direction:column;
     gap:10px;
-    background:linear-gradient(180deg,#ffffff,#f8fbff);
-    border:1px solid #dbeaff;
+    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
+    border:1px solid var(--line);
     border-radius:18px;
     padding:10px;
 }
@@ -124,19 +187,19 @@ button:hover{
 .dpad-slot{
     height:76px;
     border-radius:22px;
-    border:1px dashed #d9e9ff;
-    background:linear-gradient(180deg,#f8fcff,#eef6ff);
+    border:1px dashed #b8c5d4;
+    background:linear-gradient(180deg,var(--bg2),var(--panel-inset));
 }
 
 .dpad-core{
     height:76px;
     border-radius:22px;
-    border:1px solid #d8e8ff;
-    background:linear-gradient(180deg,#ffffff,#f4faff);
+    border:1px solid var(--line);
+    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
     display:flex;
     align-items:center;
     justify-content:center;
-    color:#8aa8c8;
+    color:#94a3b8;
     font-weight:900;
     letter-spacing:.1em;
 }
@@ -144,7 +207,7 @@ button:hover{
 .section{
     font-size:1rem;
     font-weight:900;
-    color:#17324d;
+    color:#1e3a5f;
     margin-bottom:10px;
 }
 
@@ -155,15 +218,15 @@ button:hover{
 }
 
 .card{
-    background:linear-gradient(180deg,#ffffff,#f8fbff);
-    border:1px solid #dbeaff;
+    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
+    border:1px solid var(--line);
     border-radius:18px;
     padding:14px;
 }
 
 .label{
     font-size:.72rem;
-    color:#6e88a7;
+    color:#64748b;
     font-weight:900;
     letter-spacing:.04em;
 }
@@ -172,13 +235,13 @@ button:hover{
     margin-top:7px;
     font-size:1.2rem;
     font-weight:900;
-    color:#17324d;
+    color:#1e3a5f;
 }
 
 .info{
     margin-top:12px;
-    background:linear-gradient(180deg,#ffffff,#f8fbff);
-    border:1px solid #dbeaff;
+    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
+    border:1px solid var(--line);
     border-radius:18px;
     padding:14px;
 }
@@ -196,8 +259,8 @@ button:hover{
 }
 
 .left-box{
-    background:linear-gradient(180deg,#ffffff,#f8fbff);
-    border:1px solid #dbeaff;
+    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
+    border:1px solid var(--line);
     border-radius:18px;
     padding:14px;
 }
@@ -205,7 +268,7 @@ button:hover{
 .left-head,
 .right-head{
     font-size:.78rem;
-    color:#6f88a8;
+    color:#64748b;
     font-weight:900;
     letter-spacing:.06em;
     margin-bottom:10px;
@@ -213,23 +276,23 @@ button:hover{
 }
 
 .right-box{
-    background:linear-gradient(180deg,#ffffff,#f8fbff);
-    border:1px solid #dbeaff;
+    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
+    border:1px solid var(--line);
     border-radius:18px;
     padding:14px;
 }
 
 .kv-table{
-    border:1px solid #dbeaff;
+    border:1px solid var(--line);
     border-radius:14px;
     overflow:hidden;
-    background:#ffffff;
+    background:var(--panel-inset);
 }
 
 .kv-row{
     display:grid;
     grid-template-columns: 42% 58%;
-    border-top:1px solid #e6f0ff;
+    border-top:1px solid rgba(203,213,225,.55);
 }
 
 .kv-row:first-child{
@@ -238,26 +301,26 @@ button:hover{
 
 .kv-key{
     padding:10px 12px;
-    background:#f4f9ff;
+    background:#d8e0eb;
     font-size:.74rem;
     font-weight:900;
-    color:#6887ab;
+    color:#64748b;
     letter-spacing:.04em;
     text-transform:uppercase;
-    border-right:1px solid #e6f0ff;
+    border-right:1px solid var(--line);
 }
 
 .kv-val{
     padding:10px 12px;
     font-size:.88rem;
     font-weight:700;
-    color:#1b3a5a;
+    color:#1e3a5f;
     word-break:break-word;
     line-height:1.45;
 }
 
-.kv-val.status-ok{ color:#0f9b6c; }
-.kv-val.status-run{ color:#2f8fff; }
+.kv-val.status-ok{ color:#0d9488; }
+.kv-val.status-run{ color:#0284c7; }
 
 .chip{
     display:inline-block;
@@ -266,9 +329,9 @@ button:hover{
     margin:6px 8px 0 0;
     font-size:.82rem;
     font-weight:900;
-    border:1px solid #d8e8ff;
-    background:#eef6ff;
-    color:#24548e;
+    border:1px solid #cfe2f0;
+    background:#e8f4fc;
+    color:#0369a1;
 }
 
 .chip-wrap{
@@ -283,10 +346,10 @@ button:hover{
 
 #status textarea,
 #status input{
-    background:#ffffff!important;
-    border:1px solid #dbeaff!important;
+    background:var(--bg2)!important;
+    border:1px solid var(--line)!important;
     border-radius:14px!important;
-    color:#1b3a5a!important;
+    color:#1e3a5f!important;
     font-weight:700!important;
 }
 
@@ -437,17 +500,17 @@ def _kv_table(rows: list[tuple[str, str]]) -> str:
     for key, value in rows:
         body.append(
             "<tr>"
-            "<td style='width:42%;padding:10px 12px;background:#f4f9ff;border:1px solid #dbeaff;"
-            "font-size:12px;font-weight:900;color:#5f82a8;text-transform:uppercase;letter-spacing:.04em;'>"
+            "<td style='width:42%;padding:10px 12px;background:#d8e0eb;border:1px solid #d2dce8;"
+            "font-size:12px;font-weight:900;color:#5c6b80;text-transform:uppercase;letter-spacing:.04em;'>"
             f"{key}</td>"
-            "<td style='width:58%;padding:10px 12px;background:#ffffff;border:1px solid #dbeaff;"
+            "<td style='width:58%;padding:10px 12px;background:#e8ecf4;border:1px solid #d2dce8;"
             "font-size:14px;font-weight:700;color:#1b3a5a;word-break:break-word;'>"
             f"{value}</td>"
             "</tr>"
         )
     return (
-        "<table style='width:100%;border-collapse:collapse;border:1px solid #dbeaff;"
-        "border-radius:12px;overflow:hidden;background:#ffffff;'>"
+        "<table style='width:100%;border-collapse:collapse;border:1px solid #d2dce8;"
+        "border-radius:12px;overflow:hidden;background:#eceff6;'>"
         + "".join(body)
         + "</table>"
     )
@@ -490,15 +553,15 @@ def _obs(payload):
             ("Players", html.escape(str(obs.get("num_players", 1)))),
             (
                 "Agent Position",
-                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#0f2740;font-weight:800;'>{player}</span>",
+                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#1e3a5f;font-weight:800;'>{player}</span>",
             ),
             (
                 "Exit Position",
-                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#0f2740;font-weight:800;'>{exits}</span>",
+                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#1e3a5f;font-weight:800;'>{exits}</span>",
             ),
             (
                 "Recent Moves",
-                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#0f2740;font-weight:800;'>{moves_text}</span>",
+                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#1e3a5f;font-weight:800;'>{moves_text}</span>",
             ),
         ]
     )
@@ -586,7 +649,7 @@ def build_maze_gradio_app(
                 font-weight:900;
                 letter-spacing:2px;
                 line-height:1.1;
-                color:#ffffff;
+                color:#1e3a5f;
                 text-transform:uppercase;
             ">
                 ❄️ MAZE BENCH ENVIRONMENT
@@ -660,8 +723,8 @@ def build_maze_gradio_app(
                 with gr.Group(elem_classes="mz-card"):
                     gr.HTML("<div class='section'>Telemetry</div>")
                     with gr.Column(elem_classes="right-stack"):
-                        metrics = gr.HTML("<div class='right-box'><div class='right-head'>Live Stats</div><div style='color:#7a91ac;font-weight:700;'>Waiting for reset...</div></div>")
-                        obs = gr.HTML("<div class='right-box'><div class='right-head'>Observation</div><div style='color:#7a91ac;font-weight:700;'>Waiting for reset...</div></div>")
+                        metrics = gr.HTML("<div class='right-box'><div class='right-head'>Live Stats</div><div style='color:#94a3b8;font-weight:700;'>Waiting for reset...</div></div>")
+                        obs = gr.HTML("<div class='right-box'><div class='right-head'>Observation</div><div style='color:#94a3b8;font-weight:700;'>Waiting for reset...</div></div>")
 
         outputs = [board, metrics, obs, status]
 
@@ -675,3 +738,4 @@ def build_maze_gradio_app(
         state.click(_state, outputs=[status])
 
     return demo
+
