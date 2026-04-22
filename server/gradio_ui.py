@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import html
-import json
 from typing import Any
 
 import gradio as gr
@@ -109,6 +108,10 @@ button:hover{
     display:flex;
     flex-direction:column;
     gap:10px;
+    background:linear-gradient(180deg,#ffffff,#f8fbff);
+    border:1px solid #dbeaff;
+    border-radius:18px;
+    padding:10px;
 }
 
 .dpad-row{
@@ -186,20 +189,34 @@ button:hover{
     gap:12px;
 }
 
-.right-box{
+.left-stack{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.left-box{
     background:linear-gradient(180deg,#ffffff,#f8fbff);
     border:1px solid #dbeaff;
     border-radius:18px;
     padding:14px;
 }
 
+.left-head,
 .right-head{
     font-size:.78rem;
     color:#6f88a8;
     font-weight:900;
     letter-spacing:.06em;
-    margin-bottom:8px;
+    margin-bottom:10px;
     text-transform:uppercase;
+}
+
+.right-box{
+    background:linear-gradient(180deg,#ffffff,#f8fbff);
+    border:1px solid #dbeaff;
+    border-radius:18px;
+    padding:14px;
 }
 
 .kv-table{
@@ -269,6 +286,8 @@ button:hover{
     background:#ffffff!important;
     border:1px solid #dbeaff!important;
     border-radius:14px!important;
+    color:#1b3a5a!important;
+    font-weight:700!important;
 }
 
 .solve{
@@ -368,9 +387,33 @@ def _render_board(board: str, done=False):
         )
 
     solved = (
-        "<div class='solve'>PUZZLE SOLVED ✨</div>"
+        """
+        <div style="
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            margin:18px 0 10px 0;
+        ">
+            <div class="solve" style="
+                padding:14px 28px;
+                border-radius:16px;
+                border:1px solid rgba(255,255,255,0.18);
+                background:linear-gradient(135deg,#10b981,#059669);
+                color:white;
+                font-size:18px;
+                font-weight:800;
+                letter-spacing:1.5px;
+                text-transform:uppercase;
+                box-shadow:0 10px 30px rgba(16,185,129,0.28);
+                text-align:center;
+                min-width:320px;
+            ">
+                ✨ PUZZLE SOLVED ✨
+            </div>
+        </div>
+        """
         if done else ""
-    )
+)
 
     return f"<div>{''.join(rows)}{solved}</div>"
 
@@ -492,7 +535,6 @@ def build_maze_gradio_app(
             _render_board(obs.get("board", ""), done),
             _metrics(payload),
             _obs(payload),
-            json.dumps(payload, indent=2),
             "Environment reset.",
         )
 
@@ -507,7 +549,6 @@ def build_maze_gradio_app(
             _render_board(obs.get("board", ""), done),
             _metrics(payload),
             _obs(payload),
-            json.dumps(payload, indent=2),
             f"Moved {direction}",
         )
 
@@ -524,17 +565,43 @@ def build_maze_gradio_app(
         return await _move("DOWN")
 
     def _state():
-        state = web_manager.get_state()
-        return json.dumps(state, indent=2), "State loaded."
+        web_manager.get_state()
+        return "State loaded."
 
     with gr.Blocks(css=_CSS, title="MazeBench UI") as demo:
 
         gr.HTML(f"""
-        <div id='mz-head'>
-            <div id='mz-title'>❄️ MAZEBENCH // ICE OPS</div>
-            <div id='mz-sub'>
-                {env_name.upper()} • Premium puzzle dashboard
+        <div id="mz-head" style="
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            padding:18px 12px;
+            gap:6px;
+        ">
+
+            <div id="mz-title" style="
+                font-size:34px;
+                font-weight:900;
+                letter-spacing:2px;
+                line-height:1.1;
+                color:#ffffff;
+                text-transform:uppercase;
+            ">
+                ❄️ MAZE BENCH ENVIRONMENT
             </div>
+
+            <div id="mz-sub" style="
+                font-size:14px;
+                font-weight:600;
+                color:#94a3b8;
+                letter-spacing:3px;
+                text-transform:uppercase;
+            ">
+                {env_name.upper()}
+            </div>
+
         </div>
         """)
 
@@ -544,43 +611,42 @@ def build_maze_gradio_app(
             with gr.Column(scale=1):
 
                 with gr.Group(elem_classes="mz-card"):
+                    with gr.Column(elem_classes="left-stack"):
+                        with gr.Group(elem_classes="left-box"):
+                            gr.HTML("<div class='left-head'>Controls</div>")
+                            with gr.Row():
+                                reset = gr.Button("RESET")
+                                state = gr.Button("STATE")
 
-                    gr.Markdown("## Controls")
+                        with gr.Group(elem_classes="left-box"):
+                            gr.HTML("<div class='left-head'>Direction Pad</div>")
+                            with gr.Column(elem_classes="dpad"):
+                                with gr.Row(elem_classes="dpad-row"):
+                                    gr.HTML("<div class='dpad-slot'></div>")
+                                    up = gr.Button("▲", elem_classes="dir")
+                                    gr.HTML("<div class='dpad-slot'></div>")
 
-                    with gr.Row():
-                        reset = gr.Button("RESET")
-                        state = gr.Button("STATE")
+                                with gr.Row(elem_classes="dpad-row"):
+                                    left = gr.Button("◀", elem_classes="dir")
+                                    gr.HTML("<div class='dpad-core'>•</div>")
+                                    right = gr.Button("▶", elem_classes="dir")
 
-                    gr.Markdown("## Move")
+                                with gr.Row(elem_classes="dpad-row"):
+                                    gr.HTML("<div class='dpad-slot'></div>")
+                                    down = gr.Button("▼", elem_classes="dir")
+                                    gr.HTML("<div class='dpad-slot'></div>")
 
-                    with gr.Row():
-                        gr.HTML("<div class='section'>Direction Pad</div>")
-
-                    with gr.Column(elem_classes="dpad"):
-                        with gr.Row(elem_classes="dpad-row"):
-                            gr.HTML("<div class='dpad-slot'></div>")
-                            up = gr.Button("▲", elem_classes="dir")
-                            gr.HTML("<div class='dpad-slot'></div>")
-
-                        with gr.Row(elem_classes="dpad-row"):
-                            left = gr.Button("◀", elem_classes="dir")
-                            gr.HTML("<div class='dpad-core'>•</div>")
-                            right = gr.Button("▶", elem_classes="dir")
-
-                        with gr.Row(elem_classes="dpad-row"):
-                            gr.HTML("<div class='dpad-slot'></div>")
-                            down = gr.Button("▼", elem_classes="dir")
-                            gr.HTML("<div class='dpad-slot'></div>")
-
-                    status = gr.Textbox(
-                        label="Status",
-                        value="Ready.",
-                        interactive=False,
-                        elem_id="status"
-                    )
+                        with gr.Group(elem_classes="left-box"):
+                            gr.HTML("<div class='left-head'>Session Status</div>")
+                            status = gr.Textbox(
+                                label="Status",
+                                value="Ready.",
+                                interactive=False,
+                                elem_id="status"
+                            )
 
             # CENTER
-            with gr.Column(scale=1.45):
+            with gr.Column(scale=1.2):
 
                 with gr.Group(elem_classes="mz-card"):
                     board = gr.HTML(
@@ -597,10 +663,7 @@ def build_maze_gradio_app(
                         metrics = gr.HTML("<div class='right-box'><div class='right-head'>Live Stats</div><div style='color:#7a91ac;font-weight:700;'>Waiting for reset...</div></div>")
                         obs = gr.HTML("<div class='right-box'><div class='right-head'>Observation</div><div style='color:#7a91ac;font-weight:700;'>Waiting for reset...</div></div>")
 
-        with gr.Accordion("Raw Payload", open=False):
-            payload_box = gr.Code(language="json")
-
-        outputs = [board, metrics, obs, payload_box, status]
+        outputs = [board, metrics, obs, status]
 
         reset.click(_reset, outputs=outputs)
 
@@ -609,6 +672,6 @@ def build_maze_gradio_app(
         right.click(_right, outputs=outputs)
         down.click(_down, outputs=outputs)
 
-        state.click(_state, outputs=[payload_box, status])
+        state.click(_state, outputs=[status])
 
     return demo
