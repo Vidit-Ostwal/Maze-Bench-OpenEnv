@@ -15,13 +15,31 @@ from openai import OpenAI
 try:
     from .client import MazeEnv
     from .models import MazeAction, MazeObservation
+    from .render_rollout_gif import render_rollout_gif
 except ImportError:
     from client import MazeEnv
     from models import MazeAction, MazeObservation
+    from render_rollout_gif import render_rollout_gif
 
 
 VALID_DIRECTIONS = ("LEFT", "RIGHT", "UP", "DOWN")
 ACTION_REGEX = re.compile(r"\b(LEFT|RIGHT|UP|DOWN)\b", flags=re.IGNORECASE)
+
+
+def resolve_rollout_path(path: Optional[Path], *, rollout_id: str, extension: str) -> Optional[Path]:
+    """Resolve output path templates and directory targets using rollout UUID."""
+    if path is None:
+        return None
+
+    raw = str(path)
+    if "{uuid}" in raw:
+        return Path(raw.replace("{uuid}", rollout_id))
+
+    # Treat suffix-less values like "outputs" as a directory target.
+    if path.suffix == "":
+        return path / f"rollout_{rollout_id}{extension}"
+
+    return path
 
 
 def extract_text_from_response(response: object) -> str:
@@ -89,12 +107,19 @@ def run_rollout(
     level_index: Optional[int],
     model: str,
     output_path: Path,
+    gif_output: Optional[Path],
+    frame_duration_ms: int,
 ) -> None:
     """Create env, run one episode rollout, print + save observations."""
     if not os.getenv("OPENAI_API_KEY"):
         raise EnvironmentError("OPENAI_API_KEY is not set.")
 
     llm_client = OpenAI()
+    rollout_id = str(uuid4())
+    output_path = resolve_rollout_path(output_path, rollout_id=rollout_id, extension=".jsonl")
+    if output_path is None:
+        raise ValueError("output_path must resolve to a valid file path.")
+    gif_output = resolve_rollout_path(gif_output, rollout_id=rollout_id, extension=".gif")
 
     if output_path.exists():
         output_path.unlink()
@@ -106,7 +131,7 @@ def run_rollout(
         if resolved_level_index == -1:
             resolved_level_index = (obs.metadata or {}).get("level_index", level_index)
         rollout_metadata = {
-            "rollout_id": str(uuid4()),
+            "rollout_id": rollout_id,
             "level_index": resolved_level_index,
             "model": model,
         }
@@ -147,6 +172,13 @@ def run_rollout(
 
     print("\n=== ROLLOUT COMPLETE ===")
     print(f"Saved observations to: {output_path}")
+    if gif_output is not None:
+        render_rollout_gif(
+            output_path,
+            gif_output,
+            frame_duration_ms=frame_duration_ms,
+        )
+        print(f"Saved rollout GIF to: {gif_output}")
 
 
 def main() -> None:
@@ -172,16 +204,37 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=str,
-        default="rollout_observations.jsonl",
-        help="Path to output JSONL observations file.",
+        default="outputs/rollout_{uuid}.jsonl",
+        help=(
+            "Path to output JSONL observations file. Supports {uuid} token "
+            "and directory targets."
+        ),
+    )
+    parser.add_argument(
+        "--gif-output",
+        type=str,
+        default="outputs/rollout_{uuid}.gif",
+        help=(
+            "Path to rendered rollout GIF. Supports {uuid} token and directory targets. "
+            "Set empty string to disable GIF generation."
+        ),
+    )
+    parser.add_argument(
+        "--frame-duration-ms",
+        type=int,
+        default=700,
+        help="Duration of each GIF frame in milliseconds.",
     )
     args = parser.parse_args()
+    gif_output = Path(args.gif_output) if args.gif_output else None
 
     run_rollout(
         base_url=args.base_url,
         level_index=args.level_index,
         model=args.model,
         output_path=Path(args.output),
+        gif_output=gif_output,
+        frame_duration_ms=args.frame_duration_ms,
     )
 
 
