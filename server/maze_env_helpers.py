@@ -245,6 +245,7 @@ def build_system_prompt(
     max_steps: int,
     step_count: int,
     previous_actions: List[str],
+    last_step_feedback: str,
 ) -> str:
     """Build the full system prompt text describing rules and current episode state."""
     player_line = (
@@ -305,4 +306,7 @@ def build_system_prompt(
         f"EPISODE PROGRESS:\n"
         f"  - Step count (moves so far): {step_count} / {max_steps}\n"
         f"  - Previous actions (oldest → newest): {prev_display}\n"
+        f"\n"
+        f"LAST STEP (reward shaper / environment feedback for the most recent action):\n"
+        f"  {last_step_feedback}\n"
     )
