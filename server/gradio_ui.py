@@ -5,429 +5,379 @@ from typing import Any
 
 import gradio as gr
 
-# Light Gradio theme (avoids OpenEnv’s square-corner / terminal CSS on /web).
 MAZE_GRADIO_THEME = gr.themes.Soft(
     primary_hue=gr.themes.colors.sky,
     secondary_hue=gr.themes.colors.blue,
     neutral_hue=gr.themes.colors.slate,
 ).set(
-    body_background_fill="#e6ebf3",
-    body_background_fill_dark="#e6ebf3",
-    background_fill_primary="#e8ecf4",
-    background_fill_secondary="#e2e7f0",
-    block_background_fill="#e8ecf4",
-    block_border_color="#d2dce8",
+    body_background_fill="#111827",
+    body_background_fill_dark="#111827",
+    background_fill_primary="#1a2235",
+    background_fill_secondary="#151e2e",
+    block_background_fill="#1a2235",
+    block_border_color="#2a3a52",
     block_label_text_color="#64748b",
-    block_title_text_color="#1e3a5f",
-    border_color_primary="#dbe7f2",
-    input_background_fill="#eceff6",
-    input_border_color="#c8d5e3",
+    block_title_text_color="#93c5fd",
+    border_color_primary="#2a3a52",
+    input_background_fill="#0f172a",
+    input_border_color="#2a3a52",
     button_primary_background_fill="#0ea5e9",
     button_primary_background_fill_hover="#0284c7",
     button_primary_text_color="#ffffff",
-    button_secondary_background_fill="#eceff6",
-    button_secondary_background_fill_hover="#e2e8f0",
-    button_secondary_text_color="#1e3a5f",
-    button_secondary_border_color="#cfe2f0",
+    button_secondary_background_fill="#1e2d42",
+    button_secondary_background_fill_hover="#253348",
+    button_secondary_text_color="#93c5fd",
+    button_secondary_border_color="#2a3a52",
 )
 
 
 # ==========================================================
-# ICE OPS UI
+# CSS — dark, cohesive, no white surfaces
 # ==========================================================
 
 _CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
 :root{
-    /* Page: same hue as boxes — tinted blue-gray, not white */
-    --bg1:#e8ecf4;
-    --bg2:#dfe5ef;
-    /* Column shells: step darker so cards still read against the page */
-    --panel:#d8dfe9;
-    --panel-mid:#d0d8e4;
-    /* Nested regions inside a column — barely lighter, still matches the trio */
-    --panel-inset:#eceff6;
-    --line:#d2dce8;
-    --text:#1e3a5f;
-    --muted:#64748b;
-    --blue:#0ea5e9;
-    --blue2:#7dd3fc;
-    --green:#0d9488;
-    /* Full-page paint (reused below + for !important overrides) */
-    --mz-page-stack:
-        radial-gradient(circle at 12% 8%,#eef1f7 0%,transparent 48%),
-        radial-gradient(circle at 88% 92%,#e3e8f1 0%,transparent 44%),
-        linear-gradient(165deg,var(--bg1) 0%,var(--bg2) 100%);
-    /* Gradio theme tokens — layout uses these for big surfaces; keep them off pure white */
-    --body-background-fill:var(--bg2);
-    --background-fill-primary:var(--bg1);
-    --background-fill-secondary:#e2e7f0;
-    --block-background-fill:var(--bg1);
+    --bg-deep:#0d1525;
+    --bg1:#111827;
+    --bg2:#151e2e;
+    --panel:#1a2438;
+    --panel-mid:#1e2a40;
+    --panel-inset:#0f1929;
+    --line:#2a3a52;
+    --line-soft:#1e2d42;
+    --text:#c8daf0;
+    --text-head:#e2eeff;
+    --muted:#4a6080;
+    --blue:#38bdf8;
+    --blue-dim:#1e6fa8;
+    --green:#10b981;
+    --green-dim:#065f46;
+    --amber:#f59e0b;
+    --red:#f87171;
+    --cell-wall-a:#2563a8;
+    --cell-wall-b:#1a4a80;
+    --cell-path-a:#1e2d42;
+    --cell-path-b:#192638;
 }
 
-html{
-    background:var(--mz-page-stack) !important;
-    background-color:var(--bg2) !important;
-    min-height:100%;
+html, body {
+    background: var(--bg-deep) !important;
+    background-color: var(--bg-deep) !important;
+    font-family: Inter, sans-serif !important;
+    color: var(--text) !important;
 }
 
-body{
-    background:var(--mz-page-stack) !important;
-    background-color:var(--bg2) !important;
-    font-family:Inter,sans-serif!important;
-    color:var(--text)!important;
+gradio-app {
+    background: var(--bg-deep) !important;
+    background-color: var(--bg-deep) !important;
+    --body-background-fill: var(--bg-deep);
+    --background-fill-primary: var(--bg1);
+    --background-fill-secondary: var(--bg2);
+    --block-background-fill: var(--panel);
 }
 
-/* Host element for Gradio 6 — often paints the visible “page” behind blocks */
-gradio-app{
-    background:var(--mz-page-stack) !important;
-    background-color:var(--bg2) !important;
-    /* Inherited into shadow tree — keeps inner wrappers off default white */
-    --body-background-fill:var(--bg2);
-    --background-fill-primary:var(--bg1);
-    --background-fill-secondary:#e2e7f0;
-    --block-background-fill:var(--bg1);
+body .gradio-container {
+    background: transparent !important;
+    font-family: Inter, sans-serif !important;
+    color: var(--text) !important;
 }
 
-body .gradio-container{
-    background:transparent !important;
-    font-family:Inter,sans-serif!important;
-    color:var(--text)!important;
+footer { display: none !important; }
+
+.block-container {
+    max-width: 1480px !important;
+    padding-top: 22px !important;
+    background: transparent !important;
 }
 
-footer{display:none!important;}
-
-.block-container{
-    max-width:1480px!important;
-    padding-top:22px!important;
-    background:transparent !important;
+/* ── Card shell ── */
+.mz-card {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-mid) 100%);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45);
 }
 
-.mz-card{
-    background:linear-gradient(180deg,var(--panel) 0%,var(--panel-mid) 100%);
-    backdrop-filter:blur(10px);
-    border:1px solid var(--line);
-    border-radius:24px;
-    padding:18px;
-    box-shadow:0 6px 20px rgba(15,23,42,.05);
+/* ── Header ── */
+#mz-head {
+    background: linear-gradient(135deg, var(--panel-inset), var(--bg2));
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 18px 24px;
+    margin-bottom: 14px;
 }
 
-#mz-head{
-    background:linear-gradient(135deg,var(--panel-inset),var(--bg2));
-    border:1px solid var(--line);
-    border-radius:24px;
-    padding:18px 24px;
-    margin-bottom:14px;
+/* ── Board ── */
+#mz-board {
+    min-height: 640px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 24px;
+    background: linear-gradient(180deg, var(--panel-inset) 0%, var(--bg2) 100%);
+    border: 1px solid var(--line);
+    padding: 18px;
 }
 
-#mz-title{
-    font-size:1.55rem;
-    font-weight:900;
-    color:#1e3a5f;
+/* ── Buttons ── */
+button {
+    min-height: 58px !important;
+    border-radius: 18px !important;
+    border: 1px solid var(--line) !important;
+    background: linear-gradient(180deg, var(--panel-mid), var(--panel-inset)) !important;
+    color: var(--text-head) !important;
+    font-weight: 800 !important;
+    transition: .18s ease !important;
 }
 
-#mz-sub{
-    margin-top:6px;
-    color:var(--muted);
-    font-size:.92rem;
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    border-color: var(--blue-dim) !important;
 }
 
-#mz-board{
-    min-height:640px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    border-radius:24px;
-    background:linear-gradient(180deg,var(--panel) 0%,var(--panel-mid) 100%);
-    border:1px solid var(--line);
-    padding:18px;
+.dir button {
+    min-height: 76px !important;
+    min-width: 76px !important;
+    font-size: 1.45rem !important;
+    font-weight: 900 !important;
+    border-radius: 22px !important;
+    color: var(--blue) !important;
 }
 
-button{
-    min-height:58px!important;
-    border-radius:18px!important;
-    border:1px solid #c8d5e3!important;
-    background:linear-gradient(180deg,var(--panel-inset),#e2e8f0)!important;
-    color:#1e3a5f!important;
-    font-weight:800!important;
-    transition:.18s ease!important;
+/* ── D-pad ── */
+.dpad {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--panel-inset);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 10px;
 }
 
-button:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 20px rgba(15,23,42,.08);
+.dpad-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    align-items: center;
 }
 
-.dir button{
-    min-height:76px!important;
-    min-width:76px!important;
-    font-size:1.45rem!important;
-    font-weight:900!important;
-    border-radius:22px!important;
+.dpad-slot {
+    height: 76px;
+    border-radius: 22px;
+    border: 1px dashed var(--line-soft);
+    background: var(--bg-deep);
 }
 
-.dpad{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:10px;
+.dpad-core {
+    height: 76px;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-weight: 900;
 }
 
-.dpad-row{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:10px;
-    align-items:center;
+/* ── Typography helpers ── */
+.section {
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--text-head);
+    margin-bottom: 10px;
 }
 
-.dpad-slot{
-    height:76px;
-    border-radius:22px;
-    border:1px dashed #b8c5d4;
-    background:linear-gradient(180deg,var(--bg2),var(--panel-inset));
+.left-stack, .right-stack { display: flex; flex-direction: column; gap: 12px; }
+
+.left-box, .right-box {
+    background: linear-gradient(180deg, var(--panel-inset), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 14px;
 }
 
-.dpad-core{
-    height:76px;
-    border-radius:22px;
-    border:1px solid var(--line);
-    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#94a3b8;
-    font-weight:900;
-    letter-spacing:.1em;
+.left-head, .right-head {
+    font-size: .78rem;
+    color: var(--muted);
+    font-weight: 900;
+    letter-spacing: .06em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
 }
 
-.section{
-    font-size:1rem;
-    font-weight:900;
-    color:#1e3a5f;
-    margin-bottom:10px;
+/* ── Status textbox ── */
+#status textarea, #status input {
+    background: var(--bg-deep) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 14px !important;
+    color: var(--text) !important;
+    font-weight: 700 !important;
 }
 
-.grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
+/* ── Solve banner ── */
+.solve {
+    margin-top: 12px;
+    text-align: center;
+    font-weight: 900;
+    color: var(--green);
 }
 
-.card{
-    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px;
+/* ── Step history scroll strip ── */
+.step-strip-wrap {
+    display: block;             /* explicit block so it doesn't collapse */
+    width: 100%;
+    min-width: 0;               /* allow shrink inside flex parents */
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* fixed height = one row of chips + scrollbar; never grows vertically */
+    height: 38px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+    box-sizing: border-box;
+}
+.step-strip-wrap::-webkit-scrollbar { height: 4px; }
+.step-strip-wrap::-webkit-scrollbar-track { background: transparent; }
+.step-strip-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+
+.step-strip {
+    display: inline-flex;       /* inline-flex → width hugs content, enabling scroll */
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    height: 30px;               /* match chip height so no vertical overflow */
+    padding: 0 2px;
 }
 
-.label{
-    font-size:.72rem;
-    color:#64748b;
-    font-weight:900;
-    letter-spacing:.04em;
+.step-chip {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: .76rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    background: var(--panel-inset);
+    color: var(--blue);
+    line-height: 1;
 }
 
-.value{
-    margin-top:7px;
-    font-size:1.2rem;
-    font-weight:900;
-    color:#1e3a5f;
+.step-chip.step-old {
+    color: var(--muted);
+    background: var(--bg-deep);
+    border-color: var(--line-soft);
 }
 
-.info{
-    margin-top:12px;
-    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px;
-}
 
-.right-stack{
-    display:flex;
-    flex-direction:column;
-    gap:12px;
+/* ── Last-move message banner ── */
+.mz-msg {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--panel-inset);
+    border: 1px solid var(--line);
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.45;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-
-.left-stack{
-    display:flex;
-    flex-direction:column;
-    gap:12px;
+.mz-msg-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
 }
-
-.left-box{
-    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px;
+/* ── Reward panel ── */
+.reward-total {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--green);
+    letter-spacing: .02em;
 }
-
-.left-head,
-.right-head{
-    font-size:.78rem;
-    color:#64748b;
-    font-weight:900;
-    letter-spacing:.06em;
-    margin-bottom:10px;
-    text-transform:uppercase;
+.reward-total.neg { color: var(--red); }
+.reward-step-val {
+    font-size: 1rem;
+    font-weight: 800;
 }
-
-.right-box{
-    background:linear-gradient(180deg,var(--panel-inset),var(--panel));
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px;
-}
-
-.kv-table{
-    border:1px solid var(--line);
-    border-radius:14px;
-    overflow:hidden;
-    background:var(--panel-inset);
-}
-
-.kv-row{
-    display:grid;
-    grid-template-columns: 42% 58%;
-    border-top:1px solid rgba(203,213,225,.55);
-}
-
-.kv-row:first-child{
-    border-top:none;
-}
-
-.kv-key{
-    padding:10px 12px;
-    background:#d8e0eb;
-    font-size:.74rem;
-    font-weight:900;
-    color:#64748b;
-    letter-spacing:.04em;
-    text-transform:uppercase;
-    border-right:1px solid var(--line);
-}
-
-.kv-val{
-    padding:10px 12px;
-    font-size:.88rem;
-    font-weight:700;
-    color:#1e3a5f;
-    word-break:break-word;
-    line-height:1.45;
-}
-
-.kv-val.status-ok{ color:#0d9488; }
-.kv-val.status-run{ color:#0284c7; }
-
-.chip{
-    display:inline-block;
-    padding:8px 12px;
-    border-radius:999px;
-    margin:6px 8px 0 0;
-    font-size:.82rem;
-    font-weight:900;
-    border:1px solid #cfe2f0;
-    background:#e8f4fc;
-    color:#0369a1;
-}
-
-.chip-wrap{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-}
-
-.mono{
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-#status textarea,
-#status input{
-    background:var(--bg2)!important;
-    border:1px solid var(--line)!important;
-    border-radius:14px!important;
-    color:#1e3a5f!important;
-    font-weight:700!important;
-}
-
-.solve{
-    margin-top:12px;
-    text-align:center;
-    font-weight:900;
-    color:var(--green);
-}
+.reward-step-val.pos { color: var(--green); }
+.reward-step-val.neg { color: var(--red); }
+.reward-step-val.zero { color: var(--muted); }
 """
 
 
 # ==========================================================
-# BOARD
+# BOARD RENDERER
 # ==========================================================
 
 def _cell(symbol: str) -> str:
-    base = """
-    width:46px;height:46px;
-    border-radius:14px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    """
+    base = (
+        "width:46px;height:46px;"
+        "border-radius:14px;"
+        "display:flex;"
+        "justify-content:center;"
+        "align-items:center;"
+        "flex-shrink:0;"
+    )
 
     if symbol == "#":
-        return f"""
-        <div style="{base}
-        background:linear-gradient(135deg,#8cb7e5,#628fc5);
-        border:1px solid #4f7eb8;"></div>
-        """
+        return (
+            f'<div style="{base}'
+            'background:linear-gradient(135deg,#2563a8,#1a4a80);'
+            'border:1px solid #1d3d6e;box-shadow:inset 0 2px 4px rgba(0,0,0,.4);"></div>'
+        )
 
     if symbol == ".":
-        return f"""
-        <div style="{base}
-        background:linear-gradient(180deg,#ffffff,#f4faff);
-        border:1px solid #dfecff;"></div>
-        """
+        return (
+            f'<div style="{base}'
+            'background:linear-gradient(180deg,#1e2d42,#192638);'
+            'border:1px solid #253548;"></div>'
+        )
 
     if symbol == "e":
-        return f"""
-        <div style="{base}
-        background:linear-gradient(180deg,#eafff6,#dffff0);
-        border:1px solid #a9e6c9;">
-        <div style="
-        width:18px;height:18px;
-        transform:rotate(45deg);
-        background:#11c989;
-        border-radius:3px;"></div>
-        </div>
-        """
+        return (
+            f'<div style="{base}'
+            'background:linear-gradient(180deg,#0a2a1e,#052016);'
+            'border:1px solid #0d5c38;">'
+            '<div style="width:18px;height:18px;transform:rotate(45deg);'
+            'background:#10b981;border-radius:3px;'
+            'box-shadow:0 0 10px rgba(16,185,129,.6);"></div>'
+            '</div>'
+        )
 
     if symbol == "a":
-        return f"""
-        <div style="{base}
-        background:linear-gradient(180deg,#ffffff,#f2f9ff);
-        border:1px solid #dceaff;">
-        <div style="
-        width:24px;height:24px;
-        border-radius:50%;
-        background:radial-gradient(circle,#ffffff,#70c2ff,#2f8fff);
-        box-shadow:0 0 12px rgba(47,143,255,.35);"></div>
-        </div>
-        """
+        return (
+            f'<div style="{base}'
+            'background:linear-gradient(180deg,#1e2d42,#192638);'
+            'border:1px solid #253548;">'
+            '<div style="width:24px;height:24px;border-radius:50%;'
+            'background:radial-gradient(circle,#ffffff,#70c2ff,#2f8fff);'
+            'box-shadow:0 0 14px rgba(47,143,255,.55);"></div>'
+            '</div>'
+        )
 
     if symbol == "b":
-        return f"""
-        <div style="{base}
-        background:linear-gradient(180deg,#eafff6,#dffff0);
-        border:1px solid #a9e6c9;">
-        <div style="
-        width:24px;height:24px;
-        border-radius:50%;
-        background:radial-gradient(circle,#ffffff,#70c2ff,#2f8fff);"></div>
-        </div>
-        """
+        return (
+            f'<div style="{base}'
+            'background:linear-gradient(180deg,#0a2a1e,#052016);'
+            'border:1px solid #0d5c38;">'
+            '<div style="width:24px;height:24px;border-radius:50%;'
+            'background:radial-gradient(circle,#ffffff,#70c2ff,#2f8fff);'
+            'box-shadow:0 0 10px rgba(47,143,255,.4);"></div>'
+            '</div>'
+        )
 
-    return f"""<div style="{base}background:#fff;"></div>"""
+    return f'<div style="{base}background:#0d1525;"></div>'
 
 
 def _parse(board: str):
@@ -437,139 +387,212 @@ def _parse(board: str):
 
 def _render_board(board: str, done=False):
     grid = _parse(board)
-
     if not grid:
         grid = [["." for _ in range(10)] for _ in range(10)]
 
     rows = []
-
     for row in grid:
         cells = "".join(_cell(c) for c in row)
         rows.append(
             f"<div style='display:flex;gap:6px;margin-bottom:6px'>{cells}</div>"
         )
 
-    solved = (
-        """
-        <div style="
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            margin:18px 0 10px 0;
-        ">
-            <div class="solve" style="
-                padding:14px 28px;
-                border-radius:16px;
-                border:1px solid rgba(255,255,255,0.18);
+    solved = ""
+    if done:
+        solved = """
+        <div style="display:flex;justify-content:center;align-items:center;margin:18px 0 10px 0;">
+            <div style="
+                padding:14px 28px;border-radius:16px;
                 background:linear-gradient(135deg,#10b981,#059669);
-                color:white;
-                font-size:18px;
-                font-weight:800;
-                letter-spacing:1.5px;
-                text-transform:uppercase;
-                box-shadow:0 10px 30px rgba(16,185,129,0.28);
-                text-align:center;
-                min-width:320px;
-            ">
+                color:white;font-size:18px;font-weight:800;
+                letter-spacing:1.5px;text-transform:uppercase;
+                box-shadow:0 10px 30px rgba(16,185,129,.35);
+                text-align:center;min-width:320px;">
                 ✨ PUZZLE SOLVED ✨
             </div>
-        </div>
-        """
-        if done else ""
-)
+        </div>"""
 
     return f"<div>{''.join(rows)}{solved}</div>"
 
 
 # ==========================================================
-# RIGHT PANEL
+# RIGHT PANEL — metrics, rewards, observations
 # ==========================================================
 
-def _mini(title, val):
-    return f"""
-    <div class='card'>
-        <div class='label'>{title}</div>
-        <div class='value'>{val}</div>
-    </div>
-    """
+_KV_KEY = (
+    "width:42%;padding:10px 12px;"
+    "background:var(--panel-inset);border:1px solid var(--line);"
+    "font-size:12px;font-weight:900;color:var(--muted);"
+    "text-transform:uppercase;letter-spacing:.04em;"
+)
+_KV_VAL = (
+    "width:58%;padding:10px 12px;"
+    "background:var(--bg1);border:1px solid var(--line);"
+    "font-size:14px;font-weight:700;color:var(--text);"
+    "word-break:break-word;"
+)
+_KV_WRAP = (
+    "width:100%;border-collapse:collapse;"
+    "border:1px solid var(--line);border-radius:12px;overflow:hidden;"
+)
 
 
 def _kv_table(rows: list[tuple[str, str]]) -> str:
-    """Render a guaranteed-visible key/value HTML table using inline styles."""
-    body = []
-    for key, value in rows:
-        body.append(
-            "<tr>"
-            "<td style='width:42%;padding:10px 12px;background:#d8e0eb;border:1px solid #d2dce8;"
-            "font-size:12px;font-weight:900;color:#5c6b80;text-transform:uppercase;letter-spacing:.04em;'>"
-            f"{key}</td>"
-            "<td style='width:58%;padding:10px 12px;background:#e8ecf4;border:1px solid #d2dce8;"
-            "font-size:14px;font-weight:700;color:#1b3a5a;word-break:break-word;'>"
-            f"{value}</td>"
-            "</tr>"
-        )
-    return (
-        "<table style='width:100%;border-collapse:collapse;border:1px solid #d2dce8;"
-        "border-radius:12px;overflow:hidden;background:#eceff6;'>"
-        + "".join(body)
-        + "</table>"
-    )
+    body = [
+        f"<tr><td style='{_KV_KEY}'>{k}</td><td style='{_KV_VAL}'>{v}</td></tr>"
+        for k, v in rows
+    ]
+    return f"<table style='{_KV_WRAP}'>{''.join(body)}</table>"
 
 
-def _metrics(payload):
+def _metrics_html(payload, reward_history: list[float]) -> str:
     obs = payload.get("observation", payload)
     done = payload.get("done", False)
-    reward = payload.get("reward", obs.get("reward", 0))
-    reward_display = f"{reward:+.2f}" if isinstance(reward, (int, float)) else str(reward)
+    step_reward = payload.get("reward", obs.get("reward", 0))
+    running_total = sum(reward_history) if reward_history else 0.0
+
+    total_cls = "neg" if running_total < 0 else ""
+    step_cls = "pos" if step_reward > 0 else ("neg" if step_reward < 0 else "zero")
+    step_sign = "+" if isinstance(step_reward, (int, float)) and step_reward >= 0 else ""
+
     status_text = "SOLVED" if done else "RUNNING"
-    status_color = "#0f9b6c" if done else "#2f8fff"
-    table = _kv_table(
-        [
-            ("Level", html.escape(str(obs.get("level_index", "?")))),
-            ("Moves", html.escape(f"{obs.get('step_count',0)}/{obs.get('max_steps',0)}")),
-            ("Reward", html.escape(reward_display)),
-            ("Status", f"<span style='color:{status_color};font-weight:900'>{status_text}</span>"),
-        ]
-    )
+    status_color = "var(--green)" if done else "var(--blue)"
+
+    table = _kv_table([
+        ("Level", html.escape(str(obs.get("level_index", "?")))),
+        ("Moves", html.escape(f"{obs.get('step_count', 0)}/{obs.get('max_steps', 0)}")),
+        ("Status", f"<span style='color:{status_color};font-weight:900'>{status_text}</span>"),
+    ])
+
+    reward_breakdown = ""
+    if reward_history:
+        recent = reward_history[-8:]          # show last 8 pills
+        pills = []
+        for r in reversed(recent):
+            col = "var(--green)" if r > 0 else ("var(--red)" if r < 0 else "var(--muted)")
+            sign = "+" if r >= 0 else ""
+            pills.append(
+                f"<span style='display:inline-block;padding:3px 9px;border-radius:999px;"
+                f"background:var(--panel-inset);border:1px solid var(--line);"
+                f"font-size:11px;font-weight:800;color:{col};margin:2px 3px 0 0;'>"
+                f"{sign}{r:.2f}</span>"
+            )
+        reward_breakdown = (
+            "<div style='margin-top:8px;'>"
+            "<div style='font-size:10px;font-weight:900;color:var(--muted);"
+            "letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;'>"
+            "Recent step rewards (newest → oldest)</div>"
+            "<div style='display:flex;flex-wrap:wrap;'>" + "".join(pills) + "</div>"
+            "</div>"
+        )
+
     return f"""
     <div class='right-box'>
         <div class='right-head'>Live Stats</div>
         {table}
+
+        <div style='margin-top:12px;background:var(--panel-inset);border:1px solid var(--line);
+                    border-radius:14px;padding:12px;'>
+
+            <div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;'>
+                <div>
+                    <div style='font-size:10px;font-weight:900;color:var(--muted);
+                                text-transform:uppercase;letter-spacing:.06em;
+                                margin-bottom:6px;'>Total Reward</div>
+                    <div class='reward-total {total_cls}'>{running_total:+.3f}</div>
+                </div>
+                <div>
+                    <div style='font-size:10px;font-weight:900;color:var(--muted);
+                                text-transform:uppercase;letter-spacing:.06em;
+                                margin-bottom:6px;'>Last Step</div>
+                    <div class='reward-step-val {step_cls}' style='font-size:1.5rem;'>
+                        {step_sign}{step_reward:.3f}
+                    </div>
+                </div>
+            </div>
+
+            {reward_breakdown}
+        </div>
     </div>
     """
 
 
-def _obs(payload):
+# Max step chips to keep — oldest are discarded beyond this limit
+_MAX_STEP_HISTORY = 30
+
+# Arrow icons for direction chips
+_DIR_ICON = {"UP": "▲", "DOWN": "▼", "LEFT": "◀", "RIGHT": "▶"}
+
+
+def _obs_html(payload, step_history: list[str]) -> str:
     obs = payload.get("observation", payload)
 
     player = html.escape(str(obs.get("agent_positions", [])))
-    exits = html.escape(str(obs.get("exit_positions", [])))
-    history = obs.get("previous_actions", [])
-    moves_text = ", ".join(str(x) for x in history[-8:]) if history else "None"
-    moves_text = html.escape(moves_text)
+    exits  = html.escape(str(obs.get("exit_positions", [])))
 
-    table = _kv_table(
-        [
-            ("Players", html.escape(str(obs.get("num_players", 1)))),
-            (
-                "Agent Position",
-                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#1e3a5f;font-weight:800;'>{player}</span>",
-            ),
-            (
-                "Exit Position",
-                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#1e3a5f;font-weight:800;'>{exits}</span>",
-            ),
-            (
-                "Recent Moves",
-                f"<span style='font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#1e3a5f;font-weight:800;'>{moves_text}</span>",
-            ),
-        ]
+    # message field — feedback on the last move
+    raw_msg = obs.get("message", "") or ""
+    msg_html = ""
+    if raw_msg:
+        icon = "💬"
+        msg_html = (
+            f"<div class='mz-msg'>"
+            f"<span class='mz-msg-icon'>{icon}</span>"
+            f"<span>{html.escape(str(raw_msg))}</span>"
+            f"</div>"
+        )
+
+    table = _kv_table([
+        ("Players",  html.escape(str(obs.get("num_players", 1)))),
+        ("Agent Pos",
+         f"<span style='font-family:ui-monospace,monospace;color:var(--blue);font-weight:800;'>{player}</span>"),
+        ("Exit Pos",
+         f"<span style='font-family:ui-monospace,monospace;color:var(--blue);font-weight:800;'>{exits}</span>"),
+    ])
+
+    # Cap history — newest-first list, keep only the most recent _MAX_STEP_HISTORY
+    visible = step_history[:_MAX_STEP_HISTORY]
+
+    if visible:
+        chips = []
+        for i, step in enumerate(visible):
+            icon = _DIR_ICON.get(step, step)
+            cls  = "step-chip" if i < 3 else "step-chip step-old"
+            # <span> not <div> — avoids implicit block layout breaking the strip
+            chips.append(f"<span class='{cls}'>{icon}</span>")
+        strip_inner = "".join(chips)
+    else:
+        strip_inner = (
+            "<span style='color:var(--muted);font-size:.8rem;font-weight:700;'>"
+            "No moves yet</span>"
+        )
+
+    total_moves = len(step_history)
+    shown_note = (
+        f"<span style='color:var(--muted);font-size:.72rem;font-weight:600;margin-left:4px;'>"
+        f"(showing {min(total_moves, _MAX_STEP_HISTORY)} of {total_moves})</span>"
+        if total_moves > _MAX_STEP_HISTORY else ""
     )
 
     return f"""
     <div class='right-box'>
         <div class='right-head'>Observation</div>
         {table}
+        {msg_html}
+
+        <div style='margin-top:12px;'>
+            <div style='font-size:10px;font-weight:900;color:var(--muted);
+                        text-transform:uppercase;letter-spacing:.06em;
+                        margin-bottom:6px;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;'>
+                Move History
+                <span style='color:var(--blue-dim);font-weight:700;text-transform:none;letter-spacing:0;'>
+                — newest left</span>
+                {shown_note}
+            </div>
+            <div class='step-strip-wrap'>
+                <div class='step-strip'>{strip_inner}</div>
+            </div>
+        </div>
     </div>
     """
 
@@ -586,85 +609,70 @@ def build_maze_gradio_app(
     title: str,
     quick_start_md: str,
 ):
-
     env_name = getattr(metadata, "name", "maze_env")
 
+    # ── in-memory state ──────────────────────────────────
+    _state: dict = {"reward_history": [], "step_history": []}
+
+    # ── helpers ──────────────────────────────────────────
+    def _pack(payload, status_msg):
+        obs = payload.get("observation", payload)
+        done = payload.get("done", False)
+        return (
+            _render_board(obs.get("board", ""), done),
+            _metrics_html(payload, _state["reward_history"]),
+            _obs_html(payload, _state["step_history"]),
+            status_msg,
+        )
+
+    # ── callbacks ─────────────────────────────────────────
     async def _reset():
+        _state["reward_history"].clear()
+        _state["step_history"].clear()
         payload = await web_manager.reset_environment()
-        obs = payload.get("observation", payload)
-        done = payload.get("done", False)
+        return _pack(payload, "Environment reset.")
 
-        return (
-            _render_board(obs.get("board", ""), done),
-            _metrics(payload),
-            _obs(payload),
-            "Environment reset.",
-        )
+    async def _move(direction: str):
+        payload = await web_manager.step_environment({"direction": direction})
 
-    async def _move(direction):
-        payload = await web_manager.step_environment(
-            {"direction": direction}
-        )
-        obs = payload.get("observation", payload)
-        done = payload.get("done", False)
+        # record reward
+        step_reward = payload.get("reward", payload.get("observation", {}).get("reward", 0))
+        _state["reward_history"].append(float(step_reward) if isinstance(step_reward, (int, float)) else 0.0)
 
-        return (
-            _render_board(obs.get("board", ""), done),
-            _metrics(payload),
-            _obs(payload),
-            f"Moved {direction}",
-        )
+        # record step — newest first; cap at _MAX_STEP_HISTORY entries
+        _state["step_history"].insert(0, direction)
+        if len(_state["step_history"]) > _MAX_STEP_HISTORY:
+            _state["step_history"] = _state["step_history"][:_MAX_STEP_HISTORY]
 
-    async def _up():
-        return await _move("UP")
+        return _pack(payload, f"Moved {direction}")
 
-    async def _left():
-        return await _move("LEFT")
+    async def _up():    return await _move("UP")
+    async def _left():  return await _move("LEFT")
+    async def _right(): return await _move("RIGHT")
+    async def _down():  return await _move("DOWN")
 
-    async def _right():
-        return await _move("RIGHT")
-
-    async def _down():
-        return await _move("DOWN")
-
-    def _state():
+    def _state_btn():
         web_manager.get_state()
         return "State loaded."
 
-    with gr.Blocks(css=_CSS, title="MazeBench UI") as demo:
+    # ── layout ────────────────────────────────────────────
+    with gr.Blocks(css=_CSS, title="MazeBench UI", theme=MAZE_GRADIO_THEME) as demo:
 
         gr.HTML(f"""
         <div id="mz-head" style="
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            justify-content:center;
-            text-align:center;
-            padding:18px 12px;
-            gap:6px;
-        ">
-
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;
+            text-align:center;padding:18px 12px;gap:6px;">
             <div id="mz-title" style="
-                font-size:34px;
-                font-weight:900;
-                letter-spacing:2px;
-                line-height:1.1;
-                color:#1e3a5f;
-                text-transform:uppercase;
-            ">
+                font-size:34px;font-weight:900;letter-spacing:2px;
+                line-height:1.1;color:#e2eeff;text-transform:uppercase;">
                 ❄️ MAZE BENCH ENVIRONMENT
             </div>
-
             <div id="mz-sub" style="
-                font-size:14px;
-                font-weight:600;
-                color:#94a3b8;
-                letter-spacing:3px;
-                text-transform:uppercase;
-            ">
+                font-size:14px;font-weight:600;color:#4a6080;
+                letter-spacing:3px;text-transform:uppercase;">
                 {env_name.upper()}
             </div>
-
         </div>
         """)
 
@@ -672,31 +680,28 @@ def build_maze_gradio_app(
 
             # LEFT
             with gr.Column(scale=1):
-
                 with gr.Group(elem_classes="mz-card"):
                     with gr.Column(elem_classes="left-stack"):
                         with gr.Group(elem_classes="left-box"):
                             gr.HTML("<div class='left-head'>Controls</div>")
                             with gr.Row():
-                                reset = gr.Button("RESET")
-                                state = gr.Button("STATE")
+                                reset_btn = gr.Button("RESET")
+                                state_btn = gr.Button("STATE")
 
                         with gr.Group(elem_classes="left-box"):
                             gr.HTML("<div class='left-head'>Direction Pad</div>")
                             with gr.Column(elem_classes="dpad"):
                                 with gr.Row(elem_classes="dpad-row"):
                                     gr.HTML("<div class='dpad-slot'></div>")
-                                    up = gr.Button("▲", elem_classes="dir")
+                                    up_btn = gr.Button("▲", elem_classes="dir")
                                     gr.HTML("<div class='dpad-slot'></div>")
-
                                 with gr.Row(elem_classes="dpad-row"):
-                                    left = gr.Button("◀", elem_classes="dir")
+                                    left_btn  = gr.Button("◀", elem_classes="dir")
                                     gr.HTML("<div class='dpad-core'>•</div>")
-                                    right = gr.Button("▶", elem_classes="dir")
-
+                                    right_btn = gr.Button("▶", elem_classes="dir")
                                 with gr.Row(elem_classes="dpad-row"):
                                     gr.HTML("<div class='dpad-slot'></div>")
-                                    down = gr.Button("▼", elem_classes="dir")
+                                    down_btn = gr.Button("▼", elem_classes="dir")
                                     gr.HTML("<div class='dpad-slot'></div>")
 
                         with gr.Group(elem_classes="left-box"):
@@ -705,37 +710,39 @@ def build_maze_gradio_app(
                                 label="Status",
                                 value="Ready.",
                                 interactive=False,
-                                elem_id="status"
+                                elem_id="status",
                             )
 
             # CENTER
             with gr.Column(scale=1.2):
-
                 with gr.Group(elem_classes="mz-card"):
-                    board = gr.HTML(
-                        _render_board(""),
-                        elem_id="mz-board"
-                    )
+                    board = gr.HTML(_render_board(""), elem_id="mz-board")
 
             # RIGHT
             with gr.Column(scale=1):
-
                 with gr.Group(elem_classes="mz-card"):
                     gr.HTML("<div class='section'>Telemetry</div>")
                     with gr.Column(elem_classes="right-stack"):
-                        metrics = gr.HTML("<div class='right-box'><div class='right-head'>Live Stats</div><div style='color:#94a3b8;font-weight:700;'>Waiting for reset...</div></div>")
-                        obs = gr.HTML("<div class='right-box'><div class='right-head'>Observation</div><div style='color:#94a3b8;font-weight:700;'>Waiting for reset...</div></div>")
+                        metrics = gr.HTML(
+                            "<div class='right-box'>"
+                            "<div class='right-head'>Live Stats</div>"
+                            "<div style='color:#4a6080;font-weight:700;'>Waiting for reset…</div>"
+                            "</div>"
+                        )
+                        obs_panel = gr.HTML(
+                            "<div class='right-box'>"
+                            "<div class='right-head'>Observation</div>"
+                            "<div style='color:#4a6080;font-weight:700;'>Waiting for reset…</div>"
+                            "</div>"
+                        )
 
-        outputs = [board, metrics, obs, status]
+        outputs = [board, metrics, obs_panel, status]
 
-        reset.click(_reset, outputs=outputs)
-
-        up.click(_up, outputs=outputs)
-        left.click(_left, outputs=outputs)
-        right.click(_right, outputs=outputs)
-        down.click(_down, outputs=outputs)
-
-        state.click(_state, outputs=[status])
+        reset_btn.click(_reset,   outputs=outputs)
+        up_btn.click(_up,         outputs=outputs)
+        left_btn.click(_left,     outputs=outputs)
+        right_btn.click(_right,   outputs=outputs)
+        down_btn.click(_down,     outputs=outputs)
+        state_btn.click(_state_btn, outputs=[status])
 
     return demo
-
