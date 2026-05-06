@@ -40,6 +40,8 @@ dev = [
 # Server entry point - enables running via: uv run --project . server
 # or: python -m maze_env.server.app
 server = "maze_env.server.app:main"
+# Same as ``server`` but ENABLE_WEB_INTERFACE=true so Gradio mounts at /web (run before importing app).
+web = "maze_env.server.run_web:main"
 rollout = "maze_env.rollout:main"
 rollout-gif = "maze_env.render_rollout_gif:main"
 

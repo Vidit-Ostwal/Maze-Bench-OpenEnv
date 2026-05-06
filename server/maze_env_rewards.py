@@ -1,9 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
-
 """Structured step rewards for the Ice Maze environment."""
 
 from __future__ import annotations
@@ -43,7 +37,9 @@ def board_fingerprint(grid: List[List[str]]) -> Tuple[str, ...]:
     return tuple("".join(row) for row in grid)
 
 
-def reward_terminal_solve(*, done: bool, step_count: int) -> Optional[Tuple[float, str, Dict[str, float]]]:
+def reward_terminal_solve(
+    *, done: bool, step_count: int
+) -> Optional[Tuple[float, str, Dict[str, float]]]:
     """
     If the step ends the episode successfully, return (reward, message, breakdown).
 
@@ -51,7 +47,10 @@ def reward_terminal_solve(*, done: bool, step_count: int) -> Optional[Tuple[floa
     """
     if not done:
         return None
-    message = f"Solved! All players on exits in {step_count} step(s). Reward: +{REWARD_SOLVED:g}."
+    message = (
+        f"Solved! All players on exits in {step_count} step(s). "
+        f"Reward: +{REWARD_SOLVED:g}."
+    )
     breakdown = {
         "total": REWARD_SOLVED,
         "solved_bonus": REWARD_SOLVED,
@@ -77,18 +76,24 @@ def penalty_opposite_direction(
     *, direction: str, previous_direction: Optional[str]
 ) -> Tuple[float, Optional[str]]:
     """Current direction is opposite the previous (UP↔DOWN, LEFT↔RIGHT)."""
-    if previous_direction is None or OPPOSITE_DIRECTION.get(direction) != previous_direction:
+    if (
+        previous_direction is None
+        or OPPOSITE_DIRECTION.get(direction) != previous_direction
+    ):
         return 0.0, None
     return PENALTY_OPPOSITE_ACTION, "opposite of last step (reversal)"
 
 
-def penalty_revisit_count(*, state_visit_count_before: int) -> Tuple[float, Optional[str]]:
+def penalty_revisit_count(
+    *, state_visit_count_before: int
+) -> Tuple[float, Optional[str]]:
     """Per prior visit to this full-board fingerprint this episode."""
     if state_visit_count_before <= 0:
         return 0.0, None
     value = -PENALTY_PER_PRIOR_STATE_VISIT * float(state_visit_count_before)
     detail = (
-        f"revisited a board state seen {state_visit_count_before} time(s) before in this episode"
+        "revisited a board state seen "
+        f"{state_visit_count_before} time(s) before in this episode"
     )
     return value, detail
 
@@ -99,7 +104,8 @@ def penalty_revisit_waste(
     """
     Penalize the gap in episode steps since we last *ended* a turn in this layout.
 
-    Only applies on revisits; uses ``PENALTY_PER_WASTED_STEP`` and ``WASTED_STEPS_REVISIT_CAP``.
+    Only applies on revisits; uses ``PENALTY_PER_WASTED_STEP`` and
+    ``WASTED_STEPS_REVISIT_CAP``.
     """
     if state_visit_count_before <= 0:
         return 0.0, None
@@ -108,7 +114,11 @@ def penalty_revisit_waste(
     if eff_gap <= 0:
         return 0.0, None
     value = -PENALTY_PER_WASTED_STEP * float(eff_gap)
-    cap_note = f" (capped at {WASTED_STEPS_REVISIT_CAP})" if gap > WASTED_STEPS_REVISIT_CAP else ""
+    cap_note = (
+        f" (capped at {WASTED_STEPS_REVISIT_CAP})"
+        if gap > WASTED_STEPS_REVISIT_CAP
+        else ""
+    )
     detail = f"{eff_gap} step(s) since last in this state{cap_note}"
     return value, detail
 
@@ -123,7 +133,7 @@ def compute_maze_step_reward(
     step_count: int,
 ) -> Tuple[float, str, Dict[str, float]]:
     """
-    Compute step reward and a human-readable message by summing the components above.
+    Compute step reward and a human-readable message by summing components.
 
     On the terminal (solved) step, only the +10 term applies so the success signal
     stays clear; intermediate shaping penalties are not subtracted on that step.
@@ -142,16 +152,22 @@ def compute_maze_step_reward(
         state_visit_count_before=state_visit_count_before
     )
     revisit_waste, waste_detail = penalty_revisit_waste(
-        state_visit_count_before=state_visit_count_before, waste_step_gap=waste_step_gap
+        state_visit_count_before=state_visit_count_before,
+        waste_step_gap=waste_step_gap,
     )
 
     total = repeated + opposite + revisit_count + revisit_waste
-    parts = [d for d in (rep_detail, opp_detail, count_detail, waste_detail) if d is not None]
+    parts = [
+        d for d in (rep_detail, opp_detail, count_detail, waste_detail) if d is not None
+    ]
     if parts:
         detail = "; ".join(parts)
         message = f"Step {step_count}, moved {direction}. {detail}. Reward: {total:g}."
     else:
-        message = f"Step {step_count}, moved {direction}. No shaping penalties. Reward: {total:g}."
+        message = (
+            f"Step {step_count}, moved {direction}. "
+            f"No shaping penalties. Reward: {total:g}."
+        )
 
     revisit_state = revisit_count + revisit_waste
     breakdown = {

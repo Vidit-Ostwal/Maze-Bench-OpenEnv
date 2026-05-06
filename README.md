@@ -49,10 +49,24 @@ The observation `message` (reward feedback) is also included in the `system_prom
 
 ## Quick Start
 
-Run the server:
+Run the server (HTTP API only unless you enable the web UI):
 
 ```bash
 uv run --project . server
+```
+
+**Gradio web UI** (same FastAPI process as the environment — reset/step keep state; open [http://127.0.0.1:8000/web](http://127.0.0.1:8000/web)):
+
+```bash
+uv run python -m maze_env.server.run_web --reload
+```
+
+You can also run `uv run web` (same entry point). For CLI flags such as `--help`, use `python -m maze_env.server.run_web --help` because `uv run` may intercept them.
+
+Or set the environment variable before importing the app:
+
+```bash
+ENABLE_WEB_INTERFACE=true uv run uvicorn maze_env.server.app:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Or:
@@ -75,6 +89,7 @@ with MazeEnv(base_url="http://localhost:8000").sync() as env:
 
 ## Useful Commands
 
+- Web UI + API locally: `uv run python -m maze_env.server.run_web --reload` → [http://127.0.0.1:8000/web](http://127.0.0.1:8000/web)
 - Validate dataset: `uv run python dataset/validate_dataset.py`
 - Run one rollout: `OPENAI_API_KEY=... uv run rollout --base-url http://localhost:8000 --level-index 0`
 - Render GIF from rollout: `uv run rollout-gif --input rollout_observations.jsonl --output rollout.gif`

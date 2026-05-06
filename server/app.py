@@ -18,14 +18,17 @@ Endpoints:
     - WS /ws: WebSocket endpoint for persistent sessions
 
 Usage:
-    # Development (with auto-reload):
+    # Full server with Gradio at /web (sets ENABLE_WEB_INTERFACE before import):
+    uv run python -m maze_env.server.run_web --reload
+
+    # HTTP API only (default):
     uvicorn server.app:app --reload --host 0.0.0.0 --port 8000
 
-    # Production:
-    uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 4
+    # API + web UI via env var:
+    ENABLE_WEB_INTERFACE=true uvicorn maze_env.server.app:app --reload
 
-    # Or run directly:
-    python -m server.app
+    Production (API workers, no reload):
+        uvicorn maze_env.server.app:app --host 0.0.0.0 --port 8000 --workers 4
 """
 
 import os
@@ -49,11 +52,11 @@ except Exception as e:  # pragma: no cover
 
 try:
     from ..models import MazeAction, MazeObservation
-    from .gradio_ui import MAZE_GRADIO_THEME, build_maze_gradio_app
+    from .gradio_ui import MAZE_GRADIO_CSS, MAZE_GRADIO_THEME, build_maze_gradio_app
     from .maze_env_environment import MazeEnvironment
 except ImportError:
     from models import MazeAction, MazeObservation
-    from server.gradio_ui import MAZE_GRADIO_THEME, build_maze_gradio_app
+    from server.gradio_ui import MAZE_GRADIO_CSS, MAZE_GRADIO_THEME, build_maze_gradio_app
     from server.maze_env_environment import MazeEnvironment
 
 
@@ -143,6 +146,7 @@ def _create_custom_only_web_app():
         custom_blocks,
         path="/web",
         theme=MAZE_GRADIO_THEME,
+        css=MAZE_GRADIO_CSS,
     )
     return app
 
