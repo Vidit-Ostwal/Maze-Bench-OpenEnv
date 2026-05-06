@@ -102,8 +102,10 @@ body .gradio-container {
 footer { display: none !important; }
 
 .block-container {
-    max-width: 1520px !important;
+    max-width: min(1520px, 96vw) !important;
     padding-top: 18px !important;
+    padding-left: clamp(8px, 1.8vw, 22px) !important;
+    padding-right: clamp(8px, 1.8vw, 22px) !important;
     background: transparent !important;
 }
 
@@ -221,9 +223,9 @@ button:active {
 
 /* ── D-pad specific ── */
 .dir button {
-    min-height: 72px !important;
-    min-width: 72px !important;
-    font-size: 14px !important;
+    min-height: clamp(56px, 9vw, 72px) !important;
+    min-width: clamp(56px, 9vw, 72px) !important;
+    font-size: clamp(12px, 2.1vw, 14px) !important;
     color: var(--amber-bright) !important;
     border-color: var(--amber) !important;
 }
@@ -251,13 +253,13 @@ button:active {
 }
 
 .dpad-slot {
-    height: 72px;
+    height: clamp(56px, 9vw, 72px);
     background: var(--bg-deepest);
     border: 2px dashed var(--line-soft);
 }
 
 .dpad-core {
-    height: 72px;
+    height: clamp(56px, 9vw, 72px);
     background: var(--bg-deepest);
     border: 2px solid var(--line);
     display: flex;
@@ -271,15 +273,16 @@ button:active {
 
 /* ── Board container ── */
 #mz-board {
-    min-height: 600px;
+    min-height: clamp(360px, 58vh, 600px);
     display: flex;
     justify-content: center;
     align-items: center;
     background: var(--bg-deepest);
     border: 3px solid var(--line);
-    padding: 20px;
+    padding: clamp(10px, 2vw, 20px);
     box-shadow: inset 3px 3px 0 rgba(0,0,0,.6), 4px 4px 0 #000;
     position: relative;
+    overflow: auto;
 }
 
 #mz-board::before {
@@ -508,16 +511,56 @@ input[type=number] {
     height: 100%;
 }
 
+.mz-main-row { align-items: stretch !important; }
+.mz-col-left, .mz-col-center, .mz-col-right { min-width: 0 !important; }
+
+.mz-gh-link {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 16px;
+    font-family:'Press Start 2P',monospace;
+    font-size:7px;
+    color:#d4960a;
+    background:#0e0b05;
+    border:2px solid #d4960a;
+    text-decoration:none;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    box-shadow:3px 3px 0 #000;
+    white-space: nowrap;
+}
+
+.mz-gh-link:hover {
+    background:#d4960a;
+    color:#000;
+    transform:translate(-1px, -1px);
+    box-shadow:4px 4px 0 #000;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1100px) {
     #mz-board { min-height: 480px; }
     .dir button { min-height: 62px !important; min-width: 62px !important; }
+}
+@media (max-width: 1220px) {
+    .mz-main-row { flex-wrap: wrap; }
+    .mz-col-center { order: 1; }
+    .mz-col-left { order: 2; }
+    .mz-col-right { order: 3; }
 }
 @media (max-width: 760px) {
     #mz-title { font-size: 14px !important; letter-spacing: 1px !important; }
     #mz-sub   { font-size: 16px !important; }
     #mz-board { min-height: 350px; padding: 10px; }
     .block-container { padding-top: 10px !important; }
+    #mz-head { padding: 14px 12px 12px !important; }
+    .mz-gh-link {
+        width: 100%;
+        justify-content: center;
+        margin-top: 8px;
+        font-size: 6.5px;
+    }
 }
 """
 
@@ -534,7 +577,7 @@ def _cell(symbol: str) -> str:
 
     # Base square — no border-radius, crisp pixel look
     base = (
-        "width:44px;height:44px;"
+        "width:clamp(24px,4.5vw,44px);height:clamp(24px,4.5vw,44px);"
         "display:flex;justify-content:center;align-items:center;"
         "flex-shrink:0;image-rendering:pixelated;"
         "box-sizing:border-box;position:relative;"
@@ -1080,32 +1123,17 @@ def build_maze_gradio_app(
             return _pack_error(f"State sync failed: {exc}\n{traceback.format_exc()}")
 
     # ── Layout ────────────────────────────────────────────────────
-    with gr.Blocks(title="MazeBench", css=MAZE_GRADIO_CSS, theme=MAZE_GRADIO_THEME) as demo:
+    with gr.Blocks(title="MazeBench") as demo:
 
         gr.HTML(f"""
-        <div id="mz-head" style="position:relative;display:flex;flex-direction:row;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;min-height:72px;">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;">
+        <div id="mz-head" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;min-height:72px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;grid-column:2;">
                 <div id="mz-title">⬛ MAZE BENCH ⬛</div>
                 <div id="mz-sub">{env_name.upper()} · ARCADE EDITION</div>
             </div>
             <a href="https://github.com/Vidit-Ostwal/Maze-Bench-OpenEnv"
                target="_blank" rel="noopener noreferrer"
-               style="
-                 position:absolute;top:50%;right:0;transform:translateY(-50%);
-                 display:inline-flex;align-items:center;gap:8px;
-                 padding:10px 20px;
-                 font-family:'Press Start 2P',monospace;font-size:7px;
-                 color:#d4960a;
-                 background:#0e0b05;
-                 border:2px solid #d4960a;
-                 text-decoration:none;
-                 letter-spacing:.1em;
-                 text-transform:uppercase;
-                 box-shadow:3px 3px 0 #000;
-                 flex-shrink:0;
-               "
-               onmouseover="this.style.background='#d4960a';this.style.color='#000';this.style.transform='translate(-1px,-1px)';this.style.boxShadow='4px 4px 0 #000';"
-               onmouseout="this.style.background='#0e0b05';this.style.color='#d4960a';this.style.transform='';this.style.boxShadow='3px 3px 0 #000';">
+               class="mz-gh-link" style="grid-column:3;justify-self:end;">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577
                          0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755
@@ -1124,10 +1152,10 @@ def build_maze_gradio_app(
         </div>
         """)
 
-        with gr.Row():
+        with gr.Row(elem_classes="mz-main-row"):
 
             # ── LEFT column ──────────────────────────────────────
-            with gr.Column(scale=4, min_width=260):
+            with gr.Column(scale=4, min_width=220, elem_classes="mz-col-left"):
                 with gr.Group(elem_classes="mz-card col-equal"):
                     with gr.Column(elem_classes="left-stack"):
 
@@ -1173,12 +1201,12 @@ def build_maze_gradio_app(
                         )
 
             # ── CENTER column ─────────────────────────────────────
-            with gr.Column(scale=4, min_width=340):
+            with gr.Column(scale=4, min_width=280, elem_classes="mz-col-center"):
                 with gr.Group(elem_classes="mz-card col-equal"):
                     board = gr.HTML(_render_board(""), elem_id="mz-board")
 
             # ── RIGHT column ──────────────────────────────────────
-            with gr.Column(scale=4, min_width=260):
+            with gr.Column(scale=4, min_width=220, elem_classes="mz-col-right"):
                 with gr.Group(elem_classes="mz-card col-equal"):
                     gr.HTML("<div class='section'>◈ TELEMETRY</div>")
                     with gr.Column(elem_classes="right-stack"):
