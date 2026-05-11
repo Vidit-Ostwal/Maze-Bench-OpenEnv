@@ -271,16 +271,24 @@ button:active {
     box-shadow: inset 2px 2px 0 rgba(0,0,0,.5);
 }
 
-/* ── Board container ── */
+/* ── Board frame — the ONE visible box ── */
 #mz-board {
-    min-height: clamp(360px, 58vh, 600px);
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    background: var(--bg-deepest);
-    border: 3px solid var(--line);
-    padding: clamp(10px, 2vw, 20px);
-    box-shadow: inset 3px 3px 0 rgba(0,0,0,.6), 4px 4px 0 #000;
+    justify-content: center;
+    width: 100%;
+    min-height: 240px;
+    height: fit-content;
+    box-sizing: border-box;
+    background: #0b0905 !important;
+    border: 3px solid #5c4a1e !important;
+    border-radius: 0 !important;
+    box-shadow:
+        inset 3px 3px 0 rgba(0,0,0,.7),
+        inset -1px -1px 0 rgba(255,200,80,.04),
+        4px 4px 0 #000 !important;
+    padding: clamp(18px, 2.5vw, 28px) !important;
     position: relative;
     overflow: auto;
 }
@@ -293,6 +301,7 @@ button:active {
     font-size: 14px;
     color: var(--muted);
     letter-spacing: 2px;
+    pointer-events: none;
 }
 
 /* ── Card shells ── */
@@ -540,8 +549,13 @@ input[type=number] {
 
 /* ── Responsive ── */
 @media (max-width: 1100px) {
-    #mz-board { min-height: 480px; }
     .dir button { min-height: 62px !important; min-width: 62px !important; }
+}
+@media (max-width: 480px) {
+    .mz-main-row { flex-wrap: wrap; }
+    .mz-col-center { order: 1; width: 100% !important; }
+    .mz-col-left   { order: 2; width: 100% !important; }
+    .mz-col-right  { order: 3; width: 100% !important; }
 }
 @media (max-width: 1220px) {
     .mz-main-row { flex-wrap: wrap; }
@@ -552,11 +566,17 @@ input[type=number] {
 @media (max-width: 760px) {
     #mz-title { font-size: 14px !important; letter-spacing: 1px !important; }
     #mz-sub   { font-size: 16px !important; }
-    #mz-board { min-height: 350px; padding: 10px; }
+    #mz-board { padding: 8px !important; min-height: 180px; }
     .block-container { padding-top: 10px !important; }
-    #mz-head { padding: 14px 12px 12px !important; }
+    #mz-head {
+        padding: 14px 12px 12px !important;
+        grid-template-columns: 1fr !important;
+        justify-items: center !important;
+    }
+    #mz-head > div  { grid-column: 1 !important; }
+    #mz-head > a    { grid-column: 1 !important; justify-self: center !important; }
     .mz-gh-link {
-        width: 100%;
+        width: auto;
         justify-content: center;
         margin-top: 8px;
         font-size: 6.5px;
@@ -672,14 +692,16 @@ def _render_board(board: str, done=False):
 
     solved = ""
     if done:
-        solved = """
-        <div class='solve-banner'>★ LEVEL COMPLETE ★</div>
-        """
+        solved = "<div class='solve-banner'>★ LEVEL COMPLETE ★</div>"
 
     return (
-        f"<div style='display:flex;flex-direction:column;align-items:center;'>"
-        f"{''.join(rows)}{solved}"
+        f"<div style='overflow-x:auto;overflow-y:hidden;width:100%;'>"
+        f"<div style='display:inline-flex;flex-direction:column;align-items:flex-start;"
+        f"min-width:fit-content;'>"
+        f"{''.join(rows)}"
         f"</div>"
+        f"</div>"
+        f"{solved}"
     )
 
 
@@ -1202,8 +1224,7 @@ def build_maze_gradio_app(
 
             # ── CENTER column ─────────────────────────────────────
             with gr.Column(scale=4, min_width=280, elem_classes="mz-col-center"):
-                with gr.Group(elem_classes="mz-card col-equal"):
-                    board = gr.HTML(_render_board(""), elem_id="mz-board")
+                board = gr.HTML(_render_board(""), elem_id="mz-board")
 
             # ── RIGHT column ──────────────────────────────────────
             with gr.Column(scale=4, min_width=220, elem_classes="mz-col-right"):
